@@ -1,35 +1,43 @@
-import { type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 
-// Simple className merge function without clsx dependency
 export function cn(...inputs: ClassValue[]) {
-  return inputs
-    .filter(Boolean)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return twMerge(clsx(inputs))
 }
 
-export function formatPrice(price: number) {
+// Price utilities
+export function formatPrice(price: number | string): string {
+  const numPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.]/g, '')) : price;
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
-  }).format(price)
+    minimumFractionDigits: 0
+  }).format(numPrice);
 }
 
-export function formatDate(date: Date | string) {
+export function parsePrice(price: string | number): number {
+  if (typeof price === 'number') return price;
+  return parseFloat(price.replace(/[^0-9.]/g, '')) || 0;
+}
+
+// Text utilities
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength) + '...';
+}
+
+// Date utilities
+export function formatDate(date: string | Date): string {
   return new Intl.DateTimeFormat('id-ID', {
     day: 'numeric',
     month: 'long',
-    year: 'numeric',
-  }).format(new Date(date))
+    year: 'numeric'
+  }).format(new Date(date));
 }
 
-export function formatDateTime(date: Date | string) {
-  return new Intl.DateTimeFormat('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(date))
+// URL utilities
+export function createWhatsAppUrl(phoneNumber: string, message?: string): string {
+  const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+  const url = `https://wa.me/${cleanPhone}`;
+  return message ? `${url}?text=${encodeURIComponent(message)}` : url;
 }
