@@ -1,28 +1,48 @@
-// src/app/cart/page.tsx
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { SectionHeader } from "@/components/ui/section-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSettings } from "@/contexts/SettingsContext";
+import { useToast } from "@/components/ui/toast";
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  ArrowRight,
+  Package,
+  CreditCard,
+  CheckCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Loader2
+} from "lucide-react";
 import Link from "next/link";
 
-// ✅ COMPONENT UTAMA DIBUNGKUS DI SINI
+interface Reseller {
+  id: number;
+  name: string;
+  uniqueId: string;
+  whatsappNumber: string;
+}
+
 function CartContent() {
-  const {
-    cart,
-    removeFromCart,
-    updateQuantity,
-    updateNotes,
-    clearCart,
-    getCartTotal,
-    getCartCount,
-  } = useCart();
-
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const resellerRef = searchParams.get("ref");
-
-  const [reseller, setReseller] = useState<any>(null);
+  const { settings } = useSettings();
+  const toast = useToast();
+  
+  const { cart, updateQuantity, removeFromCart, getTotalPrice, getTotalItems } = useCart();
+  const [reseller, setReseller] = useState<Reseller | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -43,362 +63,309 @@ function CartContent() {
     }
   };
 
-  const handleCheckoutAll = async () => {
-    if (cart.length === 0) {
-      alert("Keranjang kosong!");
+  const handleQuantityUpdate = (productId: number, variantId: number | undefined, newQuantity: number, maxStock: number) => {
+    if (newQuantity < 1) return;
+    if (newQuantity > maxStock) {
+      toast({ 
+        title: "Stok tidak mencukupi", 
+        description: `Maksimal pembelian: ${maxStock}`,
+        variant: "destructive" 
+      });
       return;
     }
+    updateQuantity(productId, variantId, newQuantity);
+  };
 
+  const handleRemoveItem = (productId: number, variantId: number | undefined) => {
+    removeFromCart(productId, variantId);
+    toast({ 
+      title: "Item dihapus", 
+      description: "Produk telah dihapus dari keranjang",
+      variant: "success" 
+    });
+  };
+
+  const handleCheckout = () => {
     setLoading(true);
-    try {
-      // ✅ GET SETTINGS FROM DATABASE
-      const settingsRes = await fetch("/api/settings");
-      const settings = await settingsRes.json();
-
-      // ✅ DETERMINE WHATSAPP NUMBER & SELLER NAME
-      let whatsappNumber = settings?.supportWhatsApp || "6285185031023";
-      let sellerName = settings?.storeName || "Official Store";
-
-      // Override with reseller if exists
-      if (reseller) {
-        whatsappNumber = reseller.whatsappNumber;
-        sellerName = reseller.name;
-      }
-
-      // Create transactions for all items
-      const promises = cart.map((item) =>
-        fetch("/api/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            productId: item.productId,
-            variantId: item.variantId || null,
-            quantity: item.quantity,
-            resellerId: reseller?.uniqueId || null,
-            notes: item.enableNotes !== false ? item.notes : undefined,
-          }),
-        })
-      );
-
-      await Promise.all(promises);
-
-      // ✅ BUILD WHATSAPP MESSAGE WITH TIMESTAMP
-      const now = new Date();
-      const orderDate = now.toLocaleDateString("id-ID", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-      const orderTime = now.toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
-
-      let message = `Halo ${sellerName}! 👋\n\n`;
-      message += `Pesanan Baru:\n`;
-      message += `━━━━━━━━━━━━━━━━━━━━━\n`;
-      message += `📅 Tanggal: ${orderDate}\n`;
-      message += `⏰ Waktu: ${orderTime} WIB\n`;
-      message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
-      message += `Detail Pesanan:\n`;
-
-      cart.forEach((item, idx) => {
-        message += `\n${idx + 1}. ${item.productName}\n`;
-        if (item.variantName && item.variantValue) {
-          message += `   Varian: ${item.variantName}: ${item.variantValue}\n`;
-        }
-        message += `   Jumlah: ${item.quantity}x\n`;
-        message += `   Subtotal: Rp ${(
-          item.productPrice * item.quantity
-        ).toLocaleString("id-ID")}\n`;
-        if (item.enableNotes !== false && item.notes) {
-          message += `   Catatan: ${item.notes}\n`;
-        }
-      });
-
-      message += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
-      message += `💰 TOTAL: Rp ${getCartTotal().toLocaleString("id-ID")}\n`;
-      message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
-      message += `Mohon diproses ya. Terima kasih! 🙏`;
-
-      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        message
-      )}`;
-
-      // Open WhatsApp and clear cart
-      window.open(whatsappUrl, "_blank");
-      clearCart();
-
-      // Redirect back to products
-      setTimeout(() => {
-        router.push(resellerRef ? `/products?ref=${resellerRef}` : "/products");
-      }, 1000);
-    } catch (error) {
-      console.error("Checkout error:", error);
-      alert("Gagal melakukan checkout");
-    } finally {
-      setLoading(false);
-    }
+    const checkoutUrl = resellerRef ? `/checkout?ref=${resellerRef}` : "/checkout";
+    router.push(checkoutUrl);
   };
 
   if (cart.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-        <nav className="bg-white shadow-md">
-          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-            <Link href="/" className="text-2xl font-bold text-purple-600">
-              Store Saya
-            </Link>
-            <Link
-              href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}
-              className="text-gray-700 hover:text-purple-600"
-            >
-              ← Kembali Belanja
-            </Link>
+      <PageLayout>
+        <section className="py-20 px-4">
+          <div className="container">
+            <div className="max-w-md mx-auto text-center space-y-6">
+              <div className="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                <ShoppingCart className="w-16 h-16 text-gray-400" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-gray-900">Keranjang Kosong</h2>
+                <p className="text-gray-600">Belum ada produk yang ditambahkan ke keranjang</p>
+              </div>
+              <Button asChild className="bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90">
+                <Link href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}>
+                  <Package className="w-4 h-4 mr-2" />
+                  Mulai Belanja
+                </Link>
+              </Button>
+            </div>
           </div>
-        </nav>
-
-        <div className="container mx-auto px-4 py-20 text-center">
-          <div className="text-8xl mb-6">🛒</div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">
-            Keranjang Kosong
-          </h1>
-          <p className="text-gray-600 mb-8">
-            Belum ada produk di keranjang Anda
-          </p>
-          <Link
-            href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}
-            className="inline-block bg-purple-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-purple-700"
-          >
-            Mulai Belanja
-          </Link>
-        </div>
-      </div>
+        </section>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-purple-600">
-            Store Saya
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}
-              className="text-gray-700 hover:text-purple-600"
-            >
-              ← Kembali Belanja
-            </Link>
-            <div className="relative">
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {getCartCount()}
-              </span>
-              <span className="text-2xl">🛒</span>
-            </div>
-          </div>
+    <PageLayout>
+      {/* Header */}
+      <section className="py-12 px-4 bg-gradient-to-r from-gray-50 to-gray-100">
+        <div className="container">
+          <SectionHeader
+            title="Keranjang Belanja"
+            description={`${getTotalItems()} item dalam keranjang Anda`}
+            icon={<ShoppingCart className="w-6 h-6" />}
+          />
         </div>
-      </nav>
+      </section>
 
       {/* Reseller Banner */}
       {reseller && (
-        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white py-3">
-          <div className="container mx-auto px-4 text-center">
-            <p className="text-sm">
-              🎉 Belanja via reseller:{" "}
-              <span className="font-bold">{reseller.name}</span>
-            </p>
+        <section className="py-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
+          <div className="container">
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              <span className="font-medium">
+                Pembelian melalui reseller: <span className="font-bold text-yellow-300">{reseller.name}</span>
+              </span>
+            </div>
           </div>
-        </div>
+        </section>
       )}
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Keranjang Belanja ({getCartCount()} item)
-          </h1>
-          <button
-            onClick={() => {
-              if (confirm("Hapus semua item dari keranjang?")) {
-                clearCart();
-              }
-            }}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-          >
-            🗑️ Kosongkan Keranjang
-          </button>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-4">
-            {cart.map((item) => (
-              <div
-                key={`${item.productId}-${item.variantId || "no-variant"}`}
-                className="bg-white rounded-xl shadow-lg p-6"
-              >
-                <div className="flex gap-4">
-                  {/* Product Image */}
-                  <img
-                    src={item.productImage || "https://via.placeholder.com/100"}
-                    alt={item.productName}
-                    className="w-24 h-24 object-cover rounded-lg"
-                  />
-
-                  {/* Product Details */}
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-800 mb-1">
-                      {item.productName}
-                    </h3>
-
-                    {item.variantName && (
-                      <p className="text-sm text-gray-600 mb-2">
-                        {item.variantName}: {item.variantValue}
-                      </p>
-                    )}
-
-                    <p className="text-xl font-bold text-purple-600 mb-3">
-                      Rp {item.productPrice.toLocaleString("id-ID")} ×{" "}
-                      {item.quantity}
-                    </p>
-
-                    {/* Quantity Controls */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <button
-                        onClick={() =>
-                          updateQuantity(
-                            item.productId,
-                            item.quantity - 1,
-                            item.variantId
-                          )
-                        }
-                        className="w-8 h-8 bg-gray-200 rounded hover:bg-gray-300"
-                      >
-                        −
-                      </button>
-                      <span className="font-bold">{item.quantity}</span>
-                      <button
-                        onClick={() =>
-                          updateQuantity(
-                            item.productId,
-                            item.quantity + 1,
-                            item.variantId
-                          )
-                        }
-                        disabled={item.quantity >= item.maxStock}
-                        className="w-8 h-8 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                      >
-                        +
-                      </button>
-                      <span className="text-sm text-gray-500 ml-2">
-                        (Max: {item.maxStock})
+      <section className="py-12 px-4">
+        <div className="container">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Cart Items */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Item dalam Keranjang</h3>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}>
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Lanjut Belanja
+                  </Link>
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                {cart.map((item) => (
+                  <Card key={`${item.productId}-${item.variantId || 'no-variant'}`} className="overflow-hidden">
+                    <CardContent className="p-6">
+                      <div className="flex gap-4">
+                        {/* Product Image */}
+                        <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {item.productImage ? (
+                            <img
+                              src={item.productImage}
+                              alt={item.productName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="w-8 h-8 text-gray-400" />
+                          )}
+                        </div>
+                        
+                        {/* Product Details */}
+                        <div className="flex-1 space-y-3">
+                          <div className="space-y-1">
+                            <h4 className="font-semibold text-gray-900">{item.productName}</h4>
+                            {item.variantName && (
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  {item.variantName}: {item.variantValue}
+                                </Badge>
+                              </div>
+                            )}
+                            {item.notes && (
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">Catatan:</span> {item.notes}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="text-lg font-bold text-brand-primary">
+                              Rp {item.productPrice.toLocaleString("id-ID")}
+                            </div>
+                            
+                            {/* Quantity Controls */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 border rounded-lg">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleQuantityUpdate(item.productId, item.variantId, item.quantity - 1, item.maxStock)}
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </Button>
+                                <span className="w-12 text-center font-medium">{item.quantity}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleQuantityUpdate(item.productId, item.variantId, item.quantity + 1, item.maxStock)}
+                                  disabled={item.quantity >= item.maxStock}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveItem(item.productId, item.variantId)}
+                                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Stock Warning */}
+                          {item.quantity >= item.maxStock * 0.8 && (
+                            <div className="flex items-center gap-2 text-orange-600 text-sm">
+                              <AlertTriangle className="w-4 h-4" />
+                              Stok terbatas (tersisa {item.maxStock})
+                            </div>
+                          )}
+                          
+                          {/* Subtotal */}
+                          <div className="pt-2 border-t">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">Subtotal:</span>
+                              <span className="font-semibold text-lg">
+                                Rp {(item.productPrice * item.quantity).toLocaleString("id-ID")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+            
+            {/* Order Summary */}
+            <div className="space-y-6">
+              <Card className="sticky top-24">
+                <CardContent className="p-6 space-y-6">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Ringkasan Pesanan
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Jumlah Item:</span>
+                        <span className="font-medium">{getTotalItems()} item</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span className="font-medium">Rp {getTotalPrice().toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Biaya Admin:</span>
+                        <span className="font-medium text-green-600">Gratis</span>
+                      </div>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold">Total:</span>
+                      <span className="text-2xl font-bold text-brand-primary">
+                        Rp {getTotalPrice().toLocaleString("id-ID")}
                       </span>
                     </div>
-
-                    {/* Notes Input */}
-                    {item.enableNotes !== false && (
-                      <div className="mb-3">
-                        <input
-                          type="text"
-                          placeholder="Tambahkan catatan..."
-                          value={item.notes || ""}
-                          onChange={(e) =>
-                            updateNotes(
-                              item.productId,
-                              e.target.value,
-                              item.variantId
-                            )
-                          }
-                          className="w-full border rounded-lg p-2 text-sm"
-                        />
-                      </div>
+                  </div>
+                  
+                  <Button
+                    onClick={handleCheckout}
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 text-lg py-6"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        Lanjut ke Checkout
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </>
                     )}
-
-                    {/* Remove Button */}
-                    <button
-                      onClick={() =>
-                        removeFromCart(item.productId, item.variantId)
-                      }
-                      className="text-red-500 text-sm hover:text-red-700"
-                    >
-                      🗑️ Hapus
-                    </button>
+                  </Button>
+                  
+                  {/* Security Info */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-green-800">
+                        <p className="font-medium mb-1">Transaksi Aman</p>
+                        <p>Data Anda dilindungi dengan enkripsi SSL</p>
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Subtotal */}
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600 mb-1">Subtotal</p>
-                    <p className="text-xl font-bold text-gray-800">
-                      Rp{" "}
-                      {(item.productPrice * item.quantity).toLocaleString(
-                        "id-ID"
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
-              <h2 className="text-xl font-bold mb-4">Ringkasan Pesanan</h2>
-
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Item</span>
-                  <span className="font-medium">{getCartCount()}</span>
-                </div>
-                <div className="flex justify-between text-xl font-bold">
-                  <span>Total</span>
-                  <span className="text-purple-600">
-                    Rp {getCartTotal().toLocaleString("id-ID")}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleCheckoutAll}
-                disabled={loading}
-                className="w-full bg-green-500 text-white py-4 rounded-lg font-bold text-lg hover:bg-green-600 disabled:bg-gray-400 mb-3"
-              >
-                {loading ? "Processing..." : "💬 Checkout via WhatsApp"}
-              </button>
-
-              <Link
-                href={
-                  resellerRef ? `/products?ref=${resellerRef}` : "/products"
-                }
-                className="block w-full text-center bg-gray-200 text-gray-800 py-3 rounded-lg hover:bg-gray-300"
-              >
-                Lanjut Belanja
-              </Link>
+                  
+                  {/* Contact Support */}
+                  {settings.supportWhatsApp && (
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-2">Butuh bantuan?</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="border-green-500 text-green-600 hover:bg-green-50"
+                      >
+                        <a
+                          href={`https://wa.me/${settings.supportWhatsApp.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Chat Customer Service
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </PageLayout>
   );
 }
 
-// ✅ EXPORT DENGAN SUSPENSE
 export default function CartPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
-          <div className="text-center">
-            <div className="text-6xl mb-4">🛒</div>
-            <div className="text-xl font-bold text-gray-800">
-              Loading Cart...
+        <PageLayout>
+          <div className="container py-20">
+            <div className="flex items-center justify-center min-h-96">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="w-8 h-8 animate-spin brand-primary" />
+                <p className="text-lg font-semibold">Loading cart...</p>
+              </div>
             </div>
           </div>
-        </div>
+        </PageLayout>
       }
     >
       <CartContent />
