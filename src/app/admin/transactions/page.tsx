@@ -1,194 +1,283 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
-
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDate, formatPrice } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDate } from "@/lib/utils";
+import {
+  DollarSign,
+  Search,
+  Filter,
+  Download,
+  Eye,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  RefreshCw
+} from "lucide-react";
 
-interface Transaction {
-  id: number;
-  productId: number;
-  product: { name: string };
-  variant?: { name: string; value: string };
-  reseller?: { name: string };
-  customerName: string | null;
-  customerPhone: string | null;
-  quantity: number;
-  totalPrice: number;
-  status: string;
-  notes: string | null;
+interface Order {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  totalAmount: number;
+  totalItems: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   createdAt: string;
+  items: any[];
+  resellerRef?: string;
 }
 
-const Icons = {
-  download: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M19 21H5"/></svg>),
-  search: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>),
-  edit: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>),
-  trash: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>),
-};
+interface OrdersResponse {
+  orders: Order[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+  summary: {
+    totalOrders: number;
+    totalRevenue: number;
+    pendingOrders: number;
+    completedOrders: number;
+  };
+}
 
 export default function TransactionsPage() {
-  const { data: session } = useSession();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [summary, setSummary] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+    completedOrders: 0
+  });
 
-  // Toolbar
-  const [filter, setFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-
-  // Modal edit
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ status: "", notes: "", customerName: "", customerPhone: "" });
-
-  useEffect(() => { fetchTransactions(); }, [statusFilter]);
-
-  const fetchTransactions = async () => {
-    try {
-      let url = "/api/transactions";
-      if (statusFilter !== "ALL") url += `?status=${statusFilter}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      setTransactions(data);
-    } catch (e) { console.error(e); } finally { setLoading(false); }
-  };
-
-  const filtered = useMemo(() => {
-    return transactions.filter((t) =>
-      t.product.name.toLowerCase().includes(filter.toLowerCase()) ||
-      t.customerName?.toLowerCase().includes(filter.toLowerCase()) ||
-      String(t.id).includes(filter)
-    );
-  }, [transactions, filter]);
-
-  const stats = useMemo(() => {
-    const total = transactions.length;
-    const totalRevenue = transactions.filter((t) => t.status !== "CANCELLED").reduce((s, t) => s + Number(t.totalPrice), 0);
-    const pending = transactions.filter((t) => t.status === "PENDING").length;
-    const completed = transactions.filter((t) => t.status === "COMPLETED").length;
-    return { total, totalRevenue, pending, completed };
-  }, [transactions]);
-
-  const exportUrl = useMemo(() => {
-    const params = new URLSearchParams();
-    if (statusFilter !== "ALL") params.set("status", statusFilter.toLowerCase());
-    params.set("format", "xlsx");
-    return `/api/transactions/export?${params.toString()}`;
+  useEffect(() => {
+    fetchOrders();
   }, [statusFilter]);
 
-  const openEdit = (t: Transaction) => { setEditingTransaction(t); setFormData({ status: t.status, notes: t.notes || "", customerName: t.customerName || "", customerPhone: t.customerPhone || "" }); setShowModal(true); };
-  const handleDelete = async (id: number) => { if (!confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return; try { const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" }); if (res.ok) { await fetchTransactions(); alert("✅ Transaksi berhasil dihapus!"); } else { alert("❌ Gagal menghapus transaksi"); } } catch (e) { console.error(e); alert("❌ Gagal menghapus transaksi"); } };
-  const handleUpdate = async (e: React.FormEvent) => { e.preventDefault(); if (!editingTransaction) return; setLoading(true); try { const res = await fetch(`/api/transactions/${editingTransaction.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) }); if (res.ok) { await fetchTransactions(); setShowModal(false); setEditingTransaction(null); } else { alert("❌ Gagal update transaksi"); } } catch (e) { console.error(e); alert("❌ Gagal update transaksi"); } finally { setLoading(false); } };
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/admin/orders?status=${statusFilter}&limit=50`);
+      const data: OrdersResponse = await response.json();
+      
+      setOrders(data.orders || []);
+      setSummary(data.summary || {
+        totalOrders: 0,
+        totalRevenue: 0,
+        pendingOrders: 0,
+        completedOrders: 0
+      });
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const badgeVariant = (status: string) => {
-    if (status === "PENDING") return "warning" as const;
-    if (status === "CONFIRMED" || status === "SHIPPED") return "secondary" as const;
-    if (status === "COMPLETED") return "success" as const;
-    if (status === "CANCELLED") return "destructive" as const;
-    return "secondary" as const;
+  const filteredOrders = orders.filter(order => 
+    order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    order.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return { variant: 'secondary' as const, icon: Clock, text: 'Pending', color: 'text-yellow-600' };
+      case 'confirmed':
+        return { variant: 'default' as const, icon: AlertCircle, text: 'Confirmed', color: 'text-blue-600' };
+      case 'completed':
+        return { variant: 'default' as const, icon: CheckCircle, text: 'Completed', color: 'text-green-600' };
+      case 'cancelled':
+        return { variant: 'destructive' as const, icon: XCircle, text: 'Cancelled', color: 'text-red-600' };
+      default:
+        return { variant: 'secondary' as const, icon: Clock, text: status, color: 'text-gray-600' };
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Header */}
+      <Card className="bg-gradient-to-r from-primary/5 to-secondary/5">
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="size-12 rounded-xl bg-gradient-to-r from-primary to-secondary grid place-items-center text-white">
+              <DollarSign className="w-6 h-6" />
+            </div>
             <div>
-              <CardTitle className="text-xl">Manajemen Transaksi</CardTitle>
-              <CardDescription>Kelola transaksi dengan filter dan ekspor</CardDescription>
+              <CardTitle className="text-2xl">Manajemen Transaksi</CardTitle>
+              <CardDescription className="text-base">
+                Kelola semua pesanan dan transaksi dari customer
+              </CardDescription>
             </div>
-            <Button asChild className="gap-2">
-              <a href={exportUrl} target="_blank" rel="noopener">Export</a>
-            </Button>
-          </div>
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="relative">
-              <Input placeholder="Cari order ID, produk, atau customer..." value={filter} onChange={(e) => setFilter(e.target.value)} className="pl-9"/>
-              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </div>
-            <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-              <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter status"/></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Semua</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                <SelectItem value="SHIPPED">Shipped</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardHeader>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card><CardHeader className="pb-2"><CardDescription>Total</CardDescription><CardTitle className="text-2xl">{stats.total}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Revenue</CardDescription><CardTitle className="text-2xl">{formatPrice(stats.totalRevenue)}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Pending</CardDescription><CardTitle className="text-2xl">{stats.pending}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Completed</CardDescription><CardTitle className="text-2xl">{stats.completed}</CardTitle></CardHeader></Card>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-primary">{summary.totalOrders}</div>
+            <div className="text-sm text-muted-foreground">Total Pesanan</div>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">Rp {summary.totalRevenue.toLocaleString('id-ID')}</div>
+            <div className="text-sm text-muted-foreground">Total Revenue</div>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-yellow-600">{summary.pendingOrders}</div>
+            <div className="text-sm text-muted-foreground">Pending</div>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-blue-600">{summary.completedOrders}</div>
+            <div className="text-sm text-muted-foreground">Completed</div>
+          </CardContent>
+        </Card>
       </div>
 
+      {/* Filters */}
       <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Cari pesanan..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={fetchOrders} disabled={loading}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="p-8 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div><p className="text-muted-foreground">Memuat transaksi...</p></div>
-          ) : (
-            <div className="w-full overflow-x-auto">
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredOrders.length > 0 ? (
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Order ID</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Produk</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Reseller</TableHead>
-                    <TableHead>Qty</TableHead>
+                    <TableHead>Items</TableHead>
                     <TableHead>Total</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell><span className="font-mono font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">#{t.id}</span></TableCell>
-                      <TableCell><div className="text-sm font-medium">{formatDate(t.createdAt)}</div></TableCell>
-                      <TableCell><div className="font-medium">{t.product?.name}</div>{t.variant && (<div className="text-xs text-muted-foreground">{t.variant.name}: {t.variant.value}</div>)}</TableCell>
-                      <TableCell><div className="text-sm">{t.customerName || "-"}</div><div className="text-xs text-muted-foreground">{t.customerPhone || "-"}</div></TableCell>
-                      <TableCell><Badge variant={t.reseller ? "secondary" : "outline"}>{t.reseller?.name || "Direct"}</Badge></TableCell>
-                      <TableCell className="font-medium">{t.quantity}</TableCell>
-                      <TableCell className="font-semibold text-emerald-600">{formatPrice(Number(t.totalPrice))}</TableCell>
-                      <TableCell><Badge variant={(() => { if (t.status === "PENDING") return "warning" as const; if (t.status === "CONFIRMED" || t.status === "SHIPPED") return "secondary" as const; if (t.status === "COMPLETED") return "success" as const; if (t.status === "CANCELLED") return "destructive" as const; return "secondary" as const; })()}>{t.status}</Badge></TableCell>
-                      <TableCell className="text-right"><div className="flex flex-wrap justify-end gap-2"><Button variant="outline" className="gap-2" onClick={() => { setEditingTransaction(t); setFormData({ status: t.status, notes: t.notes || "", customerName: t.customerName || "", customerPhone: t.customerPhone || "" }); setShowModal(true); }}><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Edit</Button><Button variant="destructive" className="gap-2" onClick={() => { if (!confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return; fetch(`/api/transactions/${t.id}`, { method: "DELETE" }).then(() => fetchTransactions()); }}><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Hapus</Button></div></TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredOrders.map((order) => {
+                    const statusInfo = getStatusBadge(order.status);
+                    return (
+                      <TableRow key={order.id}>
+                        <TableCell>
+                          <div className="font-mono text-sm">{order.id}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium text-sm">{order.customerName}</div>
+                            <div className="text-xs text-gray-500">{order.customerEmail}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{order.totalItems} item</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-primary">
+                            Rp {order.totalAmount.toLocaleString('id-ID')}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusInfo.variant} className="flex items-center gap-1 w-fit">
+                            <statusInfo.icon className="w-3 h-3" />
+                            {statusInfo.text}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-gray-600">{formatDate(order.createdAt)}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm">
+                            <Eye className="w-4 h-4 mr-2" />
+                            Detail
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <DollarSign className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                {searchTerm ? "Tidak ada pesanan yang cocok" : "Belum ada transaksi"}
+              </h3>
+              <p className="text-gray-500 mb-6">
+                {searchTerm 
+                  ? "Coba kata kunci yang berbeda" 
+                  : "Transaksi akan muncul setelah customer melakukan checkout"}
+              </p>
+              {!searchTerm && (
+                <Button asChild>
+                  <Link href="/admin/products">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tambah Produk
+                  </Link>
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {showModal && editingTransaction && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold mb-6">Edit Transaksi #{editingTransaction.id}</h2>
-            <form onSubmit={(e) => { e.preventDefault(); if (!editingTransaction) return; setLoading(true); fetch(`/api/transactions/${editingTransaction.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) }).then(async (res) => { if (res.ok) { await fetchTransactions(); setShowModal(false); setEditingTransaction(null); } else { alert("❌ Gagal update transaksi"); } }).catch((e) => { console.error(e); alert("❌ Gagal update transaksi"); }).finally(() => setLoading(false)); }} className="space-y-4">
-              <div><label className="block text-sm font-medium mb-2">Nama Customer</label><Input type="text" value={formData.customerName} onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}/></div>
-              <div><label className="block text-sm font-medium mb-2">No. Telepon</label><Input type="text" value={formData.customerPhone} onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}/></div>
-              <div><label className="block text-sm font-medium mb-2">Status</label><Select value={formData.status} onValueChange={(v: any) => setFormData({ ...formData, status: v })}><SelectTrigger className="w-full"><SelectValue placeholder="Pilih status"/></SelectTrigger><SelectContent><SelectItem value="PENDING">Pending</SelectItem><SelectItem value="CONFIRMED">Confirmed</SelectItem><SelectItem value="SHIPPED">Shipped</SelectItem><SelectItem value="COMPLETED">Completed</SelectItem><SelectItem value="CANCELLED">Cancelled</SelectItem></SelectContent></Select></div>
-              <div><label className="block text-sm font-medium mb-2">Catatan</label><textarea rows={3} className="w-full border rounded-lg p-3" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Tambahkan catatan..."/></div>
-              <div className="flex gap-3 pt-4"><Button type="submit" disabled={loading} className="flex-1">{loading ? "Saving..." : "Simpan Perubahan"}</Button><Button type="button" variant="secondary" onClick={() => { setShowModal(false); setEditingTransaction(null); }}>Batal</Button></div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
