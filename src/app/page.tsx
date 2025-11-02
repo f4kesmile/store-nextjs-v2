@@ -6,21 +6,21 @@ import { HeroSection } from "@/components/ui/hero-section";
 import { FeatureCard } from "@/components/ui/feature-card";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { useSettings } from "@/contexts/SettingsContext";
-import { 
-  ShoppingBag, 
-  Shield, 
-  Zap, 
-  Heart, 
-  Star, 
-  Users, 
-  Phone, 
-  Mail, 
+import {
+  ShoppingBag,
+  Shield,
+  Zap,
+  Heart,
+  Star,
+  Users,
+  Phone,
+  Mail,
   ArrowRight,
   Sparkles,
   Crown,
-  Gift
+  Gift,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -32,11 +32,14 @@ export default function HomePage() {
       <HeroSection
         subtitle="Premium Digital Store"
         title={`Welcome to ${settings.storeName}`}
-        description={settings.storeDescription || "Platform digital terpercaya untuk semua kebutuhan produk premium dan layanan terbaik."}
+        description={
+          settings.storeDescription ||
+          "Platform digital terpercaya untuk semua kebutuhan produk premium dan layanan terbaik."
+        }
         actions={
           <>
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90"
               asChild
             >
@@ -46,9 +49,9 @@ export default function HomePage() {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
             </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
+            <Button
+              variant="outline"
+              size="lg"
               className="px-8 py-4 text-lg font-semibold border-2 hover:bg-white/90 backdrop-blur-sm"
               asChild
             >
@@ -71,7 +74,7 @@ export default function HomePage() {
             centered
             className="mb-16"
           />
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <FeatureCard
               icon={<Zap className="text-brand-primary" />}
@@ -104,7 +107,9 @@ export default function HomePage() {
               <div className="text-gray-600 font-medium">Happy Customers</div>
             </div>
             <div className="space-y-2">
-              <div className="text-4xl font-bold text-brand-secondary">500+</div>
+              <div className="text-4xl font-bold text-brand-secondary">
+                500+
+              </div>
               <div className="text-gray-600 font-medium">Products</div>
             </div>
             <div className="space-y-2">
@@ -112,7 +117,9 @@ export default function HomePage() {
               <div className="text-gray-600 font-medium">Uptime</div>
             </div>
             <div className="space-y-2">
-              <div className="text-4xl font-bold text-brand-secondary">24/7</div>
+              <div className="text-4xl font-bold text-brand-secondary">
+                24/7
+              </div>
               <div className="text-gray-600 font-medium">Support</div>
             </div>
           </div>
@@ -124,14 +131,14 @@ export default function HomePage() {
         <section className="py-20 px-4">
           <div className="container">
             <Card className="relative overflow-hidden border-0 shadow-2xl">
-              <div 
+              <div
                 className="absolute inset-0"
                 style={{
-                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`
+                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`,
                 }}
               />
               <div className="absolute inset-0 bg-black/20" />
-              
+
               <CardContent className="relative z-10 py-16 px-8 text-center text-white">
                 <div className="max-w-4xl mx-auto space-y-8">
                   <div className="space-y-4">
@@ -139,7 +146,9 @@ export default function HomePage() {
                       <Gift className="w-4 h-4" />
                       About Us
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-bold">{settings.aboutTitle}</h2>
+                    <h2 className="text-4xl md:text-5xl font-bold">
+                      {settings.aboutTitle}
+                    </h2>
                     <p className="text-xl text-white/90 leading-relaxed whitespace-pre-line">
                       {settings.aboutDescription}
                     </p>
@@ -153,7 +162,10 @@ export default function HomePage() {
                         asChild
                       >
                         <a
-                          href={`https://wa.me/${settings.supportWhatsApp.replace(/[^0-9]/g, '')}`}
+                          href={`https://wa.me/${settings.supportWhatsApp.replace(
+                            /[^0-9]/g,
+                            ""
+                          )}`}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -193,41 +205,54 @@ export default function HomePage() {
             centered
             className="mb-16"
           />
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
                 name: "Sarah Johnson",
                 role: "Digital Marketer",
-                content: "Pelayanan yang sangat memuaskan! Produk berkualitas tinggi dan support yang responsif.",
-                rating: 5
+                content:
+                  "Pelayanan yang sangat memuaskan! Produk berkualitas tinggi dan support yang responsif.",
+                rating: 5,
               },
               {
                 name: "Ahmad Rizki",
-                role: "Business Owner", 
-                content: "Sudah bertahun-tahun menggunakan layanan ini. Selalu konsisten dengan kualitas terbaiknya.",
-                rating: 5
+                role: "Business Owner",
+                content:
+                  "Sudah bertahun-tahun menggunakan layanan ini. Selalu konsisten dengan kualitas terbaiknya.",
+                rating: 5,
               },
               {
                 name: "Lisa Wong",
                 role: "Content Creator",
-                content: "Proses yang mudah dan cepat. Sangat direkomendasikan untuk kebutuhan digital!",
-                rating: 5
-              }
+                content:
+                  "Proses yang mudah dan cepat. Sangat direkomendasikan untuk kebutuhan digital!",
+                rating: 5,
+              },
             ].map((testimonial, index) => (
-              <Card key={index} className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow duration-300">
+              <Card
+                key={index}
+                className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow duration-300"
+              >
                 <CardContent className="p-6 space-y-4">
                   <div className="flex gap-1">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                      <Star
+                        key={i}
+                        className="w-5 h-5 fill-yellow-400 text-yellow-400"
+                      />
                     ))}
                   </div>
                   <p className="text-gray-600 leading-relaxed italic">
                     "{testimonial.content}"
                   </p>
                   <div className="pt-4 border-t">
-                    <div className="font-semibold text-gray-900">{testimonial.name}</div>
-                    <div className="text-sm text-gray-500">{testimonial.role}</div>
+                    <div className="font-semibold text-gray-900">
+                      {testimonial.name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {testimonial.role}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -245,13 +270,14 @@ export default function HomePage() {
                 Siap Memulai?
               </h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Bergabunglah dengan ribuan customer yang telah mempercayai layanan kami
+                Bergabunglah dengan ribuan customer yang telah mempercayai
+                layanan kami
               </p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-brand-primary to-brand-secondary"
                 asChild
               >
@@ -260,9 +286,9 @@ export default function HomePage() {
                   Mulai Belanja
                 </Link>
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
+              <Button
+                variant="outline"
+                size="lg"
                 className="px-8 py-4 text-lg font-semibold border-2"
                 asChild
               >

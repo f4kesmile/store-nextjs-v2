@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 
 interface FeatureCardProps {
@@ -10,31 +10,33 @@ interface FeatureCardProps {
   description: string;
   className?: string;
   variant?: "default" | "gradient";
+  action?: ReactNode; // Add this line
 }
 
-export function FeatureCard({ 
-  icon, 
-  title, 
-  description, 
+export function FeatureCard({
+  icon,
+  title,
+  description,
   className,
-  variant = "default"
+  variant = "default",
+  action, // Add this line
 }: FeatureCardProps) {
   return (
-    <Card className={cn(
-      "group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0",
-      variant === "gradient" 
-        ? "bg-gradient-to-br from-white to-gray-50/50 shadow-lg" 
-        : "bg-white/80 backdrop-blur-sm shadow-md",
-      className
-    )}>
-      <CardContent className="p-8 text-center space-y-4">
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-brand-primary/10 to-brand-secondary/10 grid place-items-center group-hover:scale-110 transition-transform duration-300">
-          <div className="text-2xl">{icon}</div>
+    <Card
+      className={cn(
+        "p-6",
+        variant === "gradient" &&
+          "bg-gradient-to-br from-primary/5 to-secondary/5",
+        className
+      )}
+    >
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-3">
+          {icon}
+          <h3 className="font-semibold">{title}</h3>
         </div>
-        <div className="space-y-2">
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-          <p className="text-gray-600 leading-relaxed">{description}</p>
-        </div>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        {action && <div className="pt-2">{action}</div>} {/* Add this line */}
       </CardContent>
     </Card>
   );

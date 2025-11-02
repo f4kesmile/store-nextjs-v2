@@ -8,7 +8,7 @@ import { FeatureCard } from "@/components/ui/feature-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -22,7 +22,7 @@ import {
   MessageSquare,
   Users,
   Shield,
-  Zap
+  Zap,
 } from "lucide-react";
 
 export default function ContactPage() {
@@ -32,14 +32,16 @@ export default function ContactPage() {
     name: "",
     email: "",
     subject: "",
-    message: ""
+    message: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -48,12 +50,12 @@ export default function ContactPage() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
+      const response = await fetch("/api/contact", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       const result = await response.json();
@@ -62,18 +64,18 @@ export default function ContactPage() {
         toast({
           title: "✅ Pesan berhasil dikirim!",
           description: "Kami akan membalas dalam 1-2 jam kerja",
-          variant: "success"
+          variant: "success",
         });
-        
+
         setFormData({ name: "", email: "", subject: "", message: "" });
       } else {
-        throw new Error(result.error || 'Gagal mengirim pesan');
+        throw new Error(result.error || "Gagal mengirim pesan");
       }
     } catch (error: any) {
       toast({
         title: "Gagal mengirim pesan",
         description: error.message || "Silakan coba lagi",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setSubmitting(false);
@@ -99,7 +101,7 @@ export default function ContactPage() {
             icon={<MessageSquare className="w-6 h-6" />}
             className="mb-8 sm:mb-12"
           />
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {/* WhatsApp */}
             {settings.supportWhatsApp && (
@@ -110,12 +112,15 @@ export default function ContactPage() {
                 variant="gradient"
                 className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-xl"
                 action={
-                  <Button 
-                    asChild 
+                  <Button
+                    asChild
                     className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold"
                   >
                     <a
-                      href={`https://wa.me/${settings.supportWhatsApp.replace(/[^0-9]/g, '')}`}
+                      href={`https://wa.me/${settings.supportWhatsApp.replace(
+                        /[^0-9]/g,
+                        ""
+                      )}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -136,8 +141,8 @@ export default function ContactPage() {
                 variant="gradient"
                 className="border-blue-200 bg-gradient-to-br from-blue-50 to-sky-50 hover:shadow-xl"
                 action={
-                  <Button 
-                    asChild 
+                  <Button
+                    asChild
                     variant="outline"
                     className="w-full border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold"
                   >
@@ -171,18 +176,26 @@ export default function ContactPage() {
             {/* Contact Form */}
             <div className="space-y-6 sm:space-y-8">
               <div className="space-y-2 sm:space-y-4">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Kirim Pesan</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  Kirim Pesan
+                </h2>
                 <p className="text-sm sm:text-base text-gray-600">
-                  Isi form di bawah ini dan kami akan merespons dalam 1-2 jam kerja
+                  Isi form di bawah ini dan kami akan merespons dalam 1-2 jam
+                  kerja
                 </p>
               </div>
-              
+
               <Card className="shadow-xl">
                 <CardContent className="p-4 sm:p-8">
-                  <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="space-y-4 sm:space-y-6"
+                  >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name" className="text-sm font-medium">Nama Lengkap *</Label>
+                        <Label htmlFor="name" className="text-sm font-medium">
+                          Nama Lengkap *
+                        </Label>
                         <Input
                           id="name"
                           name="name"
@@ -195,7 +208,9 @@ export default function ContactPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm font-medium">Email *</Label>
+                        <Label htmlFor="email" className="text-sm font-medium">
+                          Email *
+                        </Label>
                         <Input
                           id="email"
                           name="email"
@@ -209,9 +224,11 @@ export default function ContactPage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <Label htmlFor="subject" className="text-sm font-medium">Subjek *</Label>
+                      <Label htmlFor="subject" className="text-sm font-medium">
+                        Subjek *
+                      </Label>
                       <Input
                         id="subject"
                         name="subject"
@@ -223,9 +240,11 @@ export default function ContactPage() {
                         className="h-10 sm:h-11"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <Label htmlFor="message" className="text-sm font-medium">Pesan *</Label>
+                      <Label htmlFor="message" className="text-sm font-medium">
+                        Pesan *
+                      </Label>
                       <textarea
                         id="message"
                         name="message"
@@ -238,7 +257,7 @@ export default function ContactPage() {
                         className="w-full px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 resize-none"
                       />
                     </div>
-                    
+
                     <Button
                       type="submit"
                       disabled={submitting}
@@ -260,7 +279,7 @@ export default function ContactPage() {
                 </CardContent>
               </Card>
             </div>
-            
+
             {/* Business Info */}
             <div className="space-y-6 sm:space-y-8">
               {/* Business Hours */}
@@ -268,7 +287,9 @@ export default function ContactPage() {
                 <CardContent className="p-4 sm:p-6 space-y-4">
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-brand-primary" />
-                    <h3 className="text-lg sm:text-xl font-semibold">Jam Operasional</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold">
+                      Jam Operasional
+                    </h3>
                   </div>
                   <div className="space-y-2 text-sm sm:text-base">
                     <div className="flex justify-between">
@@ -286,43 +307,58 @@ export default function ContactPage() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Why Choose Us */}
               <Card className="shadow-lg">
                 <CardContent className="p-4 sm:p-6 space-y-4">
                   <div className="flex items-center gap-3">
                     <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-brand-primary" />
-                    <h3 className="text-lg sm:text-xl font-semibold">Mengapa Pilih Kami</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold">
+                      Mengapa Pilih Kami
+                    </h3>
                   </div>
                   <div className="space-y-3">
                     {[
                       "Respon cepat dalam 1-2 jam kerja",
-                      "Customer service berpengalaman", 
+                      "Customer service berpengalaman",
                       "Produk digital berkualitas tinggi",
                       "Garansi uang kembali 100%",
-                      "Support teknis 24/7 via WhatsApp"
+                      "Support teknis 24/7 via WhatsApp",
                     ].map((benefit, index) => (
-                      <div key={index} className="flex items-start gap-2 sm:gap-3">
+                      <div
+                        key={index}
+                        className="flex items-start gap-2 sm:gap-3"
+                      >
                         <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm sm:text-base text-gray-700">{benefit}</span>
+                        <span className="text-sm sm:text-base text-gray-700">
+                          {benefit}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Quick Stats */}
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Card className="text-center bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                   <CardContent className="p-3 sm:p-4">
-                    <div className="text-xl sm:text-2xl font-bold text-blue-600">1000+</div>
-                    <div className="text-xs sm:text-sm text-blue-700">Customer Puas</div>
+                    <div className="text-xl sm:text-2xl font-bold text-blue-600">
+                      1000+
+                    </div>
+                    <div className="text-xs sm:text-sm text-blue-700">
+                      Customer Puas
+                    </div>
                   </CardContent>
                 </Card>
                 <Card className="text-center bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                   <CardContent className="p-3 sm:p-4">
-                    <div className="text-xl sm:text-2xl font-bold text-green-600">24/7</div>
-                    <div className="text-xs sm:text-sm text-green-700">Support Ready</div>
+                    <div className="text-xl sm:text-2xl font-bold text-green-600">
+                      24/7
+                    </div>
+                    <div className="text-xs sm:text-sm text-green-700">
+                      Support Ready
+                    </div>
                   </CardContent>
                 </Card>
               </div>

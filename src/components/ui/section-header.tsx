@@ -11,23 +11,22 @@ interface SectionHeaderProps {
   centered?: boolean;
 }
 
-export function SectionHeader({ 
-  title, 
-  description, 
-  icon, 
-  className, 
-  centered = false 
+export function SectionHeader({
+  title,
+  description,
+  icon,
+  className,
+  centered = false,
 }: SectionHeaderProps) {
   return (
-    <div className={cn(
-      "space-y-4",
-      centered && "text-center",
-      className
-    )}>
-      <div className={cn(
-        "flex items-center gap-3",
-        centered && "justify-center"
-      )}>
+    <div className={cn("space-y-4", centered && "text-center", className)}>
+      <div
+        className={cn(
+          "relative z-10",
+          "flex items-center gap-3",
+          centered && "justify-center"
+        )}
+      >
         {icon && (
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-primary to-brand-secondary grid place-items-center text-white shadow-lg">
             {icon}
@@ -40,9 +39,7 @@ export function SectionHeader({
         </div>
       </div>
       {description && (
-        <p className="text-xl text-muted-foreground max-w-3xl">
-          {description}
-        </p>
+        <p className="text-xl text-muted-foreground max-w-3xl">{description}</p>
       )}
     </div>
   );
