@@ -24,6 +24,10 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.75rem;
+    
+    /* Brand colors - will be overridden by SettingsContext */
+    --brand-primary: #2563EB;
+    --brand-secondary: #10B981;
   }
 
   .dark {
@@ -60,26 +64,57 @@
 }
 
 @layer utilities {
+  /* Brand utilities */
+  .brand-primary {
+    color: var(--brand-primary) !important;
+  }
+  
+  .bg-brand-primary {
+    background-color: var(--brand-primary) !important;
+  }
+  
+  .border-brand-primary {
+    border-color: var(--brand-primary) !important;
+  }
+  
+  .bg-brand-soft {
+    background-color: color-mix(in srgb, var(--brand-primary) 10%, white) !important;
+  }
+  
+  .bg-brand-secondary {
+    background-color: var(--brand-secondary) !important;
+  }
+  
+  .text-brand-secondary {
+    color: var(--brand-secondary) !important;
+  }
+
+  /* Animation utilities */
   .animate-in {
-    @apply animate-fade-in;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .slide-in-from-right-2 {
+    animation: slideInFromRight 0.3s ease-out;
   }
   
   .slide-in-from-top {
-    @apply animate-slide-in-from-top;
+    animation: slideInFromTop 0.3s ease-out;
   }
   
   .slide-in-from-bottom {
-    @apply animate-slide-in-from-bottom;
+    animation: slideInFromBottom 0.3s ease-out;
   }
   
   .slide-in-from-left {
-    @apply animate-slide-in-from-left;
+    animation: slideInFromLeft 0.3s ease-out;
   }
   
   .slide-in-from-right {
-    @apply animate-slide-in-from-right;
+    animation: slideInFromRight 0.3s ease-out;
   }
 
+  /* Glass morphism effects */
   .glass {
     @apply bg-white/10 backdrop-blur-md border border-white/20;
   }
@@ -88,11 +123,132 @@
     @apply bg-black/10 backdrop-blur-md border border-black/20;
   }
 
+  /* Gradient utilities */
   .gradient-bg {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 50%, hsl(var(--accent)) 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
+  
+  /* Loading states */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+  
+  .skeleton-dark {
+    @apply animate-pulse bg-gray-700 rounded;
+  }
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Toast animations */
+.toast-enter {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.toast-exit {
+  animation: slideOutToRight 0.3s ease-in;
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Focus styles */
+.focus-brand:focus {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--brand-primary) 80%, black);
 }
