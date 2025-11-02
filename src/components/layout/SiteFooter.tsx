@@ -58,9 +58,10 @@ export function SiteFooter() {
             <div className="flex gap-3">
               {settings.supportWhatsApp && (
                 <Button
-                  variant="outline"
+                  // Ubah dari outline agar tidak menyaru dengan background
+                  variant="default"
                   size="sm"
-                  className="border-white/20 text-white hover:bg-white/10"
+                  className="bg-green-600 hover:bg-green-700 text-white border-0 focus-visible:ring-2 focus-visible:ring-green-400"
                   asChild
                 >
                   <a
