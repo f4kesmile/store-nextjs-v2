@@ -4,6 +4,7 @@ import { Providers } from "./providers";
 import { CartProvider } from "@/contexts/CartContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getServerSettings } from "@/lib/server-settings";
+import HeadFavicon from "@/components/HeadFavicon";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getServerSettings();
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <Providers>
+            <HeadFavicon />
             <CartProvider>{children}</CartProvider>
           </Providers>
         </ThemeProvider>
