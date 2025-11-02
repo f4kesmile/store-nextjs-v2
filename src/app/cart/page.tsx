@@ -28,8 +28,7 @@ function CartContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const resellerRef = searchParams.get("ref");
-  const { cart, updateQuantity, removeFromCart, getCartTotal, getCartCount } =
-    useCart();
+  const { cart, updateQuantity, removeFromCart, getCartTotal, getCartCount } = useCart();
   const { settings } = useSettings();
 
   const goToCheckout = () => {
@@ -68,11 +67,7 @@ function CartContent() {
                   size="lg"
                   className="bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 font-semibold"
                 >
-                  <Link
-                    href={
-                      resellerRef ? `/products?ref=${resellerRef}` : "/products"
-                    }
-                  >
+                  <Link href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}>
                     <ShoppingBag className="w-5 h-5 mr-2" />
                     Mulai Belanja
                   </Link>
@@ -116,8 +111,7 @@ function CartContent() {
                   </span>
                 </div>
                 <p className="text-sm text-blue-700 mt-1">
-                  Akses produk langsung dikirim ke email setelah pembayaran
-                  dikonfirmasi
+                  Akses produk langsung dikirim ke email setelah pembayaran dikonfirmasi
                 </p>
               </CardContent>
             </Card>
@@ -126,18 +120,13 @@ function CartContent() {
               {cart.map((item) => {
                 const unitPrice =
                   typeof item.productPrice === "string"
-                    ? parseFloat(
-                        (item.productPrice as string).replace(/[^0-9.]/g, "")
-                      )
+                    ? parseFloat((item.productPrice as string).replace(/[^0-9.]/g, ""))
                     : Number(item.productPrice);
                 const maxStock = Number(item.maxStock ?? 0) || 999;
-                const variantId = item.variantId ?? 0;
+                const variantId = item.variantId || null;
 
                 return (
-                  <Card
-                    key={`${item.productId}-${item.variantId || "no-variant"}`}
-                    className="overflow-hidden"
-                  >
+                  <Card key={`${item.productId}-${item.variantId || "no-variant"}`} className="overflow-hidden">
                     <CardContent className="p-4 sm:p-6">
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex gap-4 flex-1">
@@ -167,10 +156,7 @@ function CartContent() {
                               </p>
                             )}
                             <div className="text-lg sm:text-xl font-bold text-brand-primary">
-                              Rp{" "}
-                              {(unitPrice * item.quantity).toLocaleString(
-                                "id-ID"
-                              )}
+                              Rp {(unitPrice * item.quantity).toLocaleString("id-ID")}
                             </div>
                           </div>
                         </div>
@@ -200,15 +186,8 @@ function CartContent() {
                               value={item.quantity}
                               onChange={(e) => {
                                 const val = parseInt(e.target.value) || 1;
-                                const capped = Math.min(
-                                  Math.max(1, val),
-                                  maxStock
-                                );
-                                updateQuantity(
-                                  item.productId,
-                                  variantId,
-                                  capped
-                                );
+                                const capped = Math.min(Math.max(1, val), maxStock);
+                                updateQuantity(item.productId, variantId, capped);
                               }}
                               className="w-16 text-center text-sm font-bold h-8"
                             />
@@ -233,9 +212,7 @@ function CartContent() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() =>
-                              removeFromCart(item.productId, variantId)
-                            }
+                            onClick={() => removeFromCart(item.productId, variantId)}
                             className="h-8 px-3"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -250,19 +227,13 @@ function CartContent() {
 
             <Card className="bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5 border-brand-primary/20">
               <CardHeader>
-                <CardTitle className="text-xl text-gray-900">
-                  Ringkasan Pesanan
-                </CardTitle>
+                <CardTitle className="text-xl text-gray-900">Ringkasan Pesanan</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between text-base">
-                    <span className="text-gray-700">
-                      Subtotal ({getCartCount()} item):
-                    </span>
-                    <span className="font-semibold">
-                      Rp {getCartTotal().toLocaleString("id-ID")}
-                    </span>
+                    <span className="text-gray-700">Subtotal ({getCartCount()} item):</span>
+                    <span className="font-semibold">Rp {getCartTotal().toLocaleString("id-ID")}</span>
                   </div>
                   <div className="flex justify-between text-base">
                     <span className="text-gray-700">Biaya Admin:</span>
@@ -271,12 +242,10 @@ function CartContent() {
                   <hr className="border-gray-200" />
                   <div className="flex justify-between text-xl font-bold">
                     <span className="text-gray-900">Total:</span>
-                    <span className="text-brand-primary">
-                      Rp {getCartTotal().toLocaleString("id-ID")}
-                    </span>
+                    <span className="text-brand-primary">Rp {getCartTotal().toLocaleString("id-ID")}</span>
                   </div>
                 </div>
-
+                
                 <div className="space-y-3 pt-4">
                   <Button
                     onClick={goToCheckout}
@@ -286,20 +255,14 @@ function CartContent() {
                     <ArrowRight className="w-5 h-5 mr-2" />
                     Lanjut ke Checkout
                   </Button>
-
+                  
                   <Button
                     asChild
                     variant="outline"
                     className="w-full h-12 text-base font-semibold"
                     size="lg"
                   >
-                    <Link
-                      href={
-                        resellerRef
-                          ? `/products?ref=${resellerRef}`
-                          : "/products"
-                      }
-                    >
+                    <Link href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}>
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Lanjut Belanja
                     </Link>
