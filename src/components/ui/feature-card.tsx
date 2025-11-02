@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface FeatureCardProps {
@@ -10,7 +10,7 @@ interface FeatureCardProps {
   description: string;
   className?: string;
   variant?: "default" | "gradient";
-  action?: ReactNode; // Add this line
+  action?: ReactNode;
 }
 
 export function FeatureCard({
@@ -19,24 +19,23 @@ export function FeatureCard({
   description,
   className,
   variant = "default",
-  action, // Add this line
+  action
 }: FeatureCardProps) {
   return (
     <Card
       className={cn(
         "p-6",
-        variant === "gradient" &&
-          "bg-gradient-to-br from-primary/5 to-secondary/5",
+        variant === "gradient" && "bg-gradient-to-br from-primary/5 to-secondary/5",
         className
       )}
     >
       <CardContent className="space-y-4">
         <div className="flex items-center gap-3">
           {icon}
-          <h3 className="font-semibold">{title}</h3>
+          <h3 className="font-semibold text-gray-900">{title}</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
-        {action && <div className="pt-2">{action}</div>} {/* Add this line */}
+        <p className="text-sm text-gray-600">{description}</p>
+        {action && <div className="pt-2">{action}</div>}
       </CardContent>
     </Card>
   );
