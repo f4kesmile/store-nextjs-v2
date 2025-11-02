@@ -7,6 +7,7 @@ export type StoreSettings = {
   supportWhatsApp?: string;
   supportEmail?: string;
   storeLocation?: string;
+  businessAddress?: string; // added to match ContactPage usage
   aboutTitle?: string;
   aboutDescription?: string;
   logoUrl?: string;
@@ -23,6 +24,7 @@ const defaultSettings: StoreSettings = {
   supportWhatsApp: "",
   supportEmail: "",
   storeLocation: "",
+  businessAddress: "", // default empty
   aboutTitle: "",
   aboutDescription: "",
   logoUrl: "",
@@ -74,11 +76,10 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
         if (!abort) {
           cachedSettings = data;
           cacheTime = Date.now();
-          setSettings(data);
+          setSettings({ ...defaultSettings, ...data });
         }
       } catch (error) {
         console.error('Failed to load settings:', error);
-        // fallback tetap default
       } finally {
         if (!abort) setLoading(false);
       }
@@ -94,7 +95,7 @@ export function SettingsProvider({ children, initial }: { children: ReactNode; i
     const data = (await res.json()) as StoreSettings;
     cachedSettings = data;
     cacheTime = Date.now();
-    setSettings(data);
+    setSettings({ ...defaultSettings, ...data });
   };
 
   const setSettingsLocal = (s: Partial<StoreSettings>) => {
