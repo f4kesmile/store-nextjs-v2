@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-// Individual icons for each menu item (clean, minimal)
 const Icons = {
   dashboard: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>),
   products: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M3 7h18"/><path d="M5 7l2 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l2-12"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>),
@@ -18,11 +17,12 @@ const Icons = {
   resellers: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M16 11a4 4 0 1 0-8 0"/><path d="M12 15a7 7 0 0 0-7 7"/><path d="M19 22a7 7 0 0 0-7-7"/><circle cx="12" cy="7" r="4"/></svg>),
   transactions: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M3 12h18"/><path d="M7 8h10"/><path d="M7 16h10"/></svg>),
   users: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M16 11a4 4 0 1 0-8 0"/><path d="M12 15a7 7 0 0 0-7 7"/><path d="M19 22a7 7 0 0 0-7-7"/></svg>),
+  logs: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M3 3h18v4H3z"/><path d="M3 11h18v4H3z"/><path d="M3 19h18v2H3z"/></svg>),
   chevronLeft: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M15 19l-7-7 7-7"/></svg>),
   chevronRight: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M9 5l7 7-7 7"/></svg>),
   menu: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M4 6h16M4 12h16M4 18h16"/></svg>),
   logout: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M17 16l4-4-4-4"/><path d="M7 12h14"/><path d="M3 21V3h8"/></svg>),
-  external: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M5 12v7a2 2 0 002 2h7"/></svg>),
+  external: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M5 12v7a2 2 0 0 0 2 2h7"/></svg>),
   userBadge: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><circle cx="12" cy="8" r="4"/><path d="M6 20a6 6 0 0112 0"/></svg>),
 };
 
@@ -31,10 +31,11 @@ interface MenuItem { name: string; path: string; icon: keyof typeof Icons; permi
 const menuItems: MenuItem[] = [
   { name: "Dashboard", path: "/admin", icon: "dashboard", permission: null },
   { name: "Produk", path: "/admin/products", icon: "products", permission: "products:read" },
-  { name: "Settings", path: "/admin/settings", icon: "settings" },
   { name: "Reseller", path: "/admin/resellers", icon: "resellers", permission: "resellers:read" },
   { name: "Transaksi", path: "/admin/transactions", icon: "transactions", permission: "transactions:read" },
   { name: "Users", path: "/admin/users", icon: "users", permission: "users:read", developerOnly: true },
+  { name: "Settings", path: "/admin/settings", icon: "settings" },
+  { name: "Log Activity", path: "/admin/logs", icon: "logs", permission: "logs:read" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -72,7 +73,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             )}
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              {sidebarOpen ? Icons.chevronLeft({ className: "w-4 h-4" }) : Icons.chevronRight({ className: "w-4 h-4" })}
+              {Icons.chevronLeft({ className: cn("w-4 h-4", !sidebarOpen && "hidden") })}
+              {Icons.chevronRight({ className: cn("w-4 h-4", sidebarOpen && "hidden") })}
             </Button>
           </div>
         </div>
@@ -80,7 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className="p-4 space-y-2 flex-1">
           {menuItems.map((item) => hasAccess(item) && (
             <Link href={item.path} key={item.path}>
-              <Button variant={pathname === item.path ? "default" : "ghost"} className={cn("w-full justify-start gap-3 h-12", pathname === item.path ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-accent/50")}>
+              <Button variant={pathname === item.path ? "default" : "ghost"} className={cn("w-full justify-start gap-3 h-12", pathname === item.path ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-accent/50")}> 
                 {Icons[item.icon]({ className: "w-5 h-5" })}
                 {sidebarOpen && <span className="font-medium truncate">{item.name}</span>}
               </Button>
@@ -120,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
         </header>
-        <div className="flex-1 p-6 space-y-6">{children}</div>
+        <div className="flex-1 p-4 sm:p-6 md:p-8 space-y-6 max-w-[1400px] mx-auto w-full">{children}</div>
       </main>
     </div>
   );
