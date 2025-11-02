@@ -1,9 +1,17 @@
-// src/app/admin/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { formatDate, formatPrice } from "@/lib/utils";
 
 interface Product {
   id: number;
@@ -41,10 +49,12 @@ export default function AdminDashboard() {
     pendingTransactions: 0,
   });
   const [products, setProducts] = useState<Product[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(
-    []
-  );
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // UI state
+  const [query, setQuery] = useState("");
+  const [stockFilter, setStockFilter] = useState<"ALL" | "LOW" | "CRITICAL" | "OUT">("ALL");
 
   useEffect(() => {
     fetchDashboardData();
@@ -62,28 +72,23 @@ export default function AdminDashboard() {
       const resellersData = await resellersRes.json();
       const transactionsData = await transactionsRes.json();
 
-      // Calculate low stock products (stock <= 5 or any variant stock <= 3)
       const lowStockProducts = productsData.filter((product: Product) => {
         const mainStockLow = product.stock <= 5;
-        const variantStockLow = product.variants?.some((v) => v.stock <= 3);
+        const variantStockLow = product.variants?.some((v: any) => v.stock <= 3);
         return mainStockLow || variantStockLow;
       });
 
-      // Calculate total revenue from completed transactions
       const totalRevenue = transactionsData
         .filter((t: Transaction) => t.status === "COMPLETED")
         .reduce((sum: number, t: Transaction) => sum + Number(t.totalPrice), 0);
 
-      // Count pending transactions
       const pendingTransactions = transactionsData.filter(
         (t: Transaction) => t.status === "PENDING"
       ).length;
 
       setStats({
         totalProducts: productsData.length,
-        activeProducts: productsData.filter(
-          (p: Product) => p.status === "ACTIVE"
-        ).length,
+        activeProducts: productsData.filter((p: Product) => p.status === "ACTIVE").length,
         totalResellers: resellersData.length,
         totalUsers: 0,
         lowStockProducts: lowStockProducts.length,
@@ -101,62 +106,59 @@ export default function AdminDashboard() {
   };
 
   const getLowStockProducts = () => {
-    return products
-      .filter((product) => {
-        const mainStockLow = product.stock <= 5;
-        const variantStockLow = product.variants?.some((v) => v.stock <= 3);
-        return mainStockLow || variantStockLow;
-      })
-      .slice(0, 10); // Show top 10 low stock products
+    const filtered = products.filter((product) => {
+      const mainStockLow = product.stock <= 5;
+      const variantStockLow = product.variants?.some((v) => v.stock <= 3);
+      const low = mainStockLow || variantStockLow;
+
+      if (stockFilter === "ALL") return low;
+      if (stockFilter === "CRITICAL") return product.stock <= 3;
+      if (stockFilter === "OUT") return product.stock === 0;
+      if (stockFilter === "LOW") return product.stock > 3 && low;
+      return low;
+    });
+
+    return filtered
+      .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 10);
   };
 
-  const getStockStatus = (stock: number) => {
-    if (stock === 0)
-      return { color: "text-red-600 bg-red-100", label: "Habis" };
-    if (stock <= 3)
-      return { color: "text-red-600 bg-red-100", label: "Kritis" };
-    if (stock <= 10)
-      return { color: "text-yellow-600 bg-yellow-100", label: "Rendah" };
-    return { color: "text-green-600 bg-green-100", label: "Aman" };
+  const getStockBadge = (stock: number) => {
+    if (stock === 0) return { variant: "destructive" as const, label: "Habis" };
+    if (stock <= 3) return { variant: "destructive" as const, label: "Kritis" };
+    if (stock <= 10) return { variant: "warning" as const, label: "Rendah" };
+    return { variant: "success" as const, label: "Aman" };
   };
 
   const statCards = [
     {
       title: "Total Produk",
-      value: stats.totalProducts,
-      icon: "📦",
-      color: "bg-gradient-to-r from-blue-500 to-blue-600",
-      textColor: "text-blue-600",
+      value: stats.totalProducts.toLocaleString("id-ID"),
+      hint: "Semua produk di katalog",
     },
     {
       title: "Produk Aktif",
-      value: stats.activeProducts,
-      icon: "✅",
-      color: "bg-gradient-to-r from-green-500 to-green-600",
-      textColor: "text-green-600",
+      value: stats.activeProducts.toLocaleString("id-ID"),
+      hint: "Produk yang visible",
     },
     {
       title: "Stock Rendah",
-      value: stats.lowStockProducts,
-      icon: "⚠️",
-      color: "bg-gradient-to-r from-red-500 to-red-600",
-      textColor: "text-red-600",
+      value: stats.lowStockProducts.toLocaleString("id-ID"),
+      hint: "Butuh restock",
     },
     {
       title: "Total Revenue",
-      value: `Rp ${stats.totalRevenue.toLocaleString("id-ID")}`,
-      icon: "💰",
-      color: "bg-gradient-to-r from-emerald-500 to-emerald-600",
-      textColor: "text-emerald-600",
+      value: formatPrice(stats.totalRevenue),
+      hint: "Transaksi sukses",
     },
   ];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -165,257 +167,240 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          🏪 Dashboard Overview
-        </h1>
-        <p className="text-gray-600">
-          Welcome back, <strong>{session?.user.name}</strong>! Here's your store
-          overview today.
-        </p>
-      </div>
+      <Card className="bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 border-primary/10">
+        <CardHeader>
+          <CardTitle className="text-2xl">🏪 Dashboard Overview</CardTitle>
+          <CardDescription>
+            Welcome back, <span className="font-medium">{session?.user.name}</span>. Here is your store status today.
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
-      {/* Stats Cards */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:scale-105 cursor-pointer border border-gray-100"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-1">
-                  {stat.title}
-                </p>
-                <h3 className={`text-2xl font-bold ${stat.textColor}`}>
-                  {typeof stat.value === "string" && stat.value.includes("Rp")
-                    ? stat.value
-                    : stat.value.toLocaleString("id-ID")}
-                </h3>
-              </div>
-              <div
-                className={`${stat.color} text-white text-3xl p-3 rounded-full shadow-md`}
-              >
-                {stat.icon}
-              </div>
-            </div>
-          </div>
+      {/* Stats */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((s) => (
+          <Card key={s.title} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardDescription>{s.title}</CardDescription>
+              <CardTitle className="text-2xl">{s.value}</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-sm text-muted-foreground">
+              {s.hint}
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Stock Monitor & Alerts Section */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Low Stock Alert */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              ⚠️ Stock Alert
-            </h2>
-            <Link
-              href="/admin/products"
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-            >
-              Kelola Stock →
-            </Link>
-          </div>
-
-          <div className="space-y-3 max-h-80 overflow-y-auto">
-            {getLowStockProducts().length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-2">🎉</div>
-                <p className="text-gray-600">Semua produk stock aman!</p>
+        {/* Low Stock */}
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">⚠️ Stock Alert</CardTitle>
+                <CardDescription>Produk yang perlu perhatian</CardDescription>
               </div>
-            ) : (
-              getLowStockProducts().map((product) => (
-                <div
-                  key={product.id}
-                  className="border border-gray-200 rounded-lg p-4"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-gray-800">
-                      {product.name}
-                    </h4>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        getStockStatus(product.stock).color
-                      }`}
-                    >
-                      {getStockStatus(product.stock).label}
-                    </span>
-                  </div>
-
-                  <div className="text-sm text-gray-600 mb-2">
-                    <strong>Stock Utama:</strong> {product.stock} unit
-                  </div>
-
-                  {product.variants && product.variants.length > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-xs text-gray-500 font-medium">
-                        Variants:
-                      </div>
-                      {product.variants.map((variant) => (
-                        <div
-                          key={variant.id}
-                          className="flex justify-between items-center text-xs"
-                        >
-                          <span className="text-gray-600">
-                            {variant.name}: {variant.value}
-                          </span>
-                          <span
-                            className={`px-2 py-1 rounded ${
-                              getStockStatus(variant.stock).color
-                            }`}
-                          >
-                            {variant.stock} unit
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-2 text-xs text-gray-500">
-                    Harga: Rp {product.price.toLocaleString("id-ID")}
-                  </div>
+              <Button asChild variant="outline">
+                <Link href="/admin/products">Kelola Stock</Link>
+              </Button>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Input
+                placeholder="Cari produk..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="max-w-xs"
+              />
+              <Select
+                value={stockFilter}
+                onValueChange={(v: any) => setStockFilter(v)}
+              >
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Semua</SelectItem>
+                  <SelectItem value="LOW">Rendah</SelectItem>
+                  <SelectItem value="CRITICAL">Kritis</SelectItem>
+                  <SelectItem value="OUT">Habis</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+              {getLowStockProducts().length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-2">🎉</div>
+                  <p className="text-muted-foreground">Semua produk aman</p>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+              ) : (
+                getLowStockProducts().map((product) => (
+                  <div key={product.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">{product.name}</h4>
+                      <Badge variant={getStockBadge(product.stock).variant}>
+                        {getStockBadge(product.stock).label}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Stock utama: {product.stock} unit
+                    </div>
+                    {product.variants && product.variants.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        <div className="text-xs text-muted-foreground font-medium">
+                          Variants
+                        </div>
+                        {product.variants.map((variant) => (
+                          <div key={variant.id} className="flex justify-between text-xs">
+                            <span>
+                              {variant.name}: {variant.value}
+                            </span>
+                            <Badge variant={getStockBadge(variant.stock).variant}>
+                              {variant.stock}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Harga: {formatPrice(product.price)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Recent Transactions */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              💳 Transaksi Terbaru
-            </h2>
-            <Link
-              href="/admin/transactions"
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-            >
-              Lihat Semua →
-            </Link>
-          </div>
-
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">💳 Transaksi Terbaru</CardTitle>
+                <CardDescription>5 transaksi terakhir</CardDescription>
+              </div>
+              <Button asChild variant="outline">
+                <Link href="/admin/transactions">Lihat Semua</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
             {recentTransactions.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-4xl mb-2">📭</div>
-                <p className="text-gray-600">Belum ada transaksi</p>
+                <p className="text-muted-foreground">Belum ada transaksi</p>
               </div>
             ) : (
-              recentTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="border border-gray-200 rounded-lg p-3"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-sm font-semibold text-purple-600">
-                      #{transaction.id}
-                    </span>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        transaction.status === "PENDING"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : transaction.status === "COMPLETED"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {transaction.status}
-                    </span>
-                  </div>
-
-                  <div className="text-sm text-gray-800 mb-1">
-                    {transaction.product.name}
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs text-gray-600">
-                    <span>
-                      Rp{" "}
-                      {Number(transaction.totalPrice).toLocaleString("id-ID")}
-                    </span>
-                    <span>
-                      {new Date(transaction.createdAt).toLocaleDateString(
-                        "id-ID"
-                      )}
-                    </span>
-                  </div>
-                </div>
-              ))
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Produk</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Tanggal</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentTransactions.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-mono text-xs">#{t.id}</TableCell>
+                      <TableCell>{t.product?.name ?? "-"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            t.status === "PENDING"
+                              ? "warning"
+                              : t.status === "COMPLETED"
+                              ? "success"
+                              : "secondary"
+                          }
+                        >
+                          {t.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatPrice(Number(t.totalPrice))}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatDate(t.createdAt)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-6 text-gray-800">
-          🚀 Quick Actions
-        </h2>
-        <div className="grid md:grid-cols-4 gap-4">
-          <Link
-            href="/admin/products"
-            className="p-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all transform hover:scale-105 text-center block"
-          >
-            <div className="text-4xl mb-3">➕</div>
-            <div className="font-bold">Tambah Produk</div>
-            <div className="text-sm opacity-90 mt-1">Kelola inventory</div>
-          </Link>
-
-          <Link
-            href="/admin/resellers"
-            className="p-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105 text-center block"
-          >
-            <div className="text-4xl mb-3">👥</div>
-            <div className="font-bold">Kelola Reseller</div>
-            <div className="text-sm opacity-90 mt-1">Manage partners</div>
-          </Link>
-
-          <Link
-            href="/admin/transactions"
-            className="p-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all transform hover:scale-105 text-center block"
-          >
-            <div className="text-4xl mb-3">💳</div>
-            <div className="font-bold">Lihat Transaksi</div>
-            <div className="text-sm opacity-90 mt-1">Monitor sales</div>
-          </Link>
-
-          <Link
-            href="/admin/settings"
-            className="p-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105 text-center block"
-          >
-            <div className="text-4xl mb-3">⚙️</div>
-            <div className="font-bold">Pengaturan</div>
-            <div className="text-sm opacity-90 mt-1">Store settings</div>
-          </Link>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">🚀 Quick Actions</CardTitle>
+          <CardDescription>Aksi cepat yang sering digunakan</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-4 gap-4">
+            <Button asChild className="h-auto py-6">
+              <Link href="/admin/products" className="w-full text-left">
+                <div className="text-3xl mb-1">➕</div>
+                <div className="font-semibold">Tambah Produk</div>
+                <div className="text-sm text-muted-foreground">Kelola inventory</div>
+              </Link>
+            </Button>
+            <Button asChild className="h-auto py-6">
+              <Link href="/admin/resellers" className="w-full text-left">
+                <div className="text-3xl mb-1">👥</div>
+                <div className="font-semibold">Kelola Reseller</div>
+                <div className="text-sm text-muted-foreground">Manage partners</div>
+              </Link>
+            </Button>
+            <Button asChild className="h-auto py-6">
+              <Link href="/admin/transactions" className="w-full text-left">
+                <div className="text-3xl mb-1">💳</div>
+                <div className="font-semibold">Lihat Transaksi</div>
+                <div className="text-sm text-muted-foreground">Monitor sales</div>
+              </Link>
+            </Button>
+            <Button asChild className="h-auto py-6">
+              <Link href="/admin/settings" className="w-full text-left">
+                <div className="text-3xl mb-1">⚙️</div>
+                <div className="font-semibold">Pengaturan</div>
+                <div className="text-sm text-muted-foreground">Store settings</div>
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* System Status */}
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl shadow-lg p-6 border border-green-200">
-        <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
-          📊 System Status
-        </h2>
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-2xl mb-2">✅</div>
-            <div className="font-semibold text-green-700">System Online</div>
-            <div className="text-sm text-gray-600">All systems operational</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl mb-2">🔄</div>
-            <div className="font-semibold text-blue-700">Auto-Sync Active</div>
-            <div className="text-sm text-gray-600">Data synchronized</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl mb-2">🛡️</div>
-            <div className="font-semibold text-purple-700">
-              Secure Connection
+      <Card className="border-green-200 bg-gradient-to-r from-green-50 to-blue-50">
+        <CardHeader>
+          <CardTitle className="text-lg">📊 System Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl mb-1">✅</div>
+              <div className="font-semibold text-green-700">System Online</div>
+              <div className="text-sm text-muted-foreground">All systems operational</div>
             </div>
-            <div className="text-sm text-gray-600">SSL encrypted</div>
+            <div className="text-center">
+              <div className="text-2xl mb-1">🔄</div>
+              <div className="font-semibold text-blue-700">Auto-Sync Active</div>
+              <div className="text-sm text-muted-foreground">Data synchronized</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl mb-1">🛡️</div>
+              <div className="font-semibold text-purple-700">Secure Connection</div>
+              <div className="text-sm text-muted-foreground">SSL encrypted</div>
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
