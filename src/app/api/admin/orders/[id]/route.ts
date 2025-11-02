@@ -6,61 +6,65 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const transactionId = parseInt(params.id);
+    const orderId = params.id;
     
-    if (isNaN(transactionId)) {
-      return NextResponse.json(
-        { error: 'ID transaksi tidak valid' },
-        { status: 400 }
-      );
-    }
-    
-    const transaction = await prisma.transaction.findUnique({
-      where: { id: transactionId },
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
       include: {
-        product: true,
-        variant: true,
+        items: {
+          include: {
+            product: true,
+            variant: true
+          }
+        },
         reseller: true
       }
     });
     
-    if (!transaction) {
+    if (!order) {
       return NextResponse.json(
-        { error: 'Transaksi tidak ditemukan' },
+        { error: 'Pesanan tidak ditemukan' },
         { status: 404 }
       );
     }
     
+    const transformedOrder = {
+      id: order.id,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      customerPhone: order.customerPhone,
+      customerAddress: order.customerAddress,
+      totalAmount: Number(order.totalAmount),
+      totalItems: order.totalItems,
+      status: order.status.toLowerCase(),
+      paymentMethod: order.paymentMethod,
+      notes: order.notes,
+      createdAt: order.createdAt.toISOString(),
+      items: order.items.map(item => ({
+        productId: item.productId,
+        productName: item.product.name,
+        variantName: item.variant?.name,
+        variantValue: item.variant?.value,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        totalPrice: Number(item.totalPrice),
+        notes: item.notes
+      })),
+      reseller: order.reseller ? {
+        name: order.reseller.name,
+        uniqueId: order.reseller.uniqueId,
+        whatsappNumber: order.reseller.whatsappNumber
+      } : null
+    };
+    
     return NextResponse.json({
-      transaction: {
-        id: transaction.id,
-        customerName: transaction.customerName,
-        customerPhone: transaction.customerPhone,
-        product: {
-          name: transaction.product.name,
-          description: transaction.product.description,
-          iconUrl: transaction.product.iconUrl
-        },
-        variant: transaction.variant ? {
-          name: transaction.variant.name,
-          value: transaction.variant.value
-        } : null,
-        quantity: transaction.quantity,
-        totalPrice: Number(transaction.totalPrice),
-        status: transaction.status,
-        notes: transaction.notes,
-        createdAt: transaction.createdAt.toISOString(),
-        reseller: transaction.reseller ? {
-          name: transaction.reseller.name,
-          whatsappNumber: transaction.reseller.whatsappNumber
-        } : null
-      }
+      order: transformedOrder
     });
     
   } catch (error) {
-    console.error('Failed to fetch transaction:', error);
+    console.error('Failed to fetch order:', error);
     return NextResponse.json(
-      { error: 'Gagal mengambil detail transaksi' },
+      { error: 'Gagal mengambil detail pesanan' },
       { status: 500 }
     );
   }
@@ -71,48 +75,66 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const transactionId = parseInt(params.id);
+    const orderId = params.id;
     const { status, notes } = await req.json();
     
-    if (isNaN(transactionId)) {
-      return NextResponse.json(
-        { error: 'ID transaksi tidak valid' },
-        { status: 400 }
-      );
-    }
-    
-    const validStatuses = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
-    if (status && !validStatuses.includes(status)) {
+    const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
+    if (status && !validStatuses.includes(status.toUpperCase())) {
       return NextResponse.json(
         { error: 'Status tidak valid' },
         { status: 400 }
       );
     }
     
-    const updatedTransaction = await prisma.transaction.update({
-      where: { id: transactionId },
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
       data: {
-        ...(status && { status }),
+        ...(status && { status: status.toUpperCase() }),
         ...(notes !== undefined && { notes }),
         updatedAt: new Date()
       },
       include: {
-        product: true,
-        variant: true,
+        items: {
+          include: {
+            product: true,
+            variant: true
+          }
+        },
         reseller: true
+      }
+    });
+    
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId: null,
+        type: 'order_updated',
+        title: `Pesanan #${orderId} Diupdate`,
+        description: `Status pesanan diubah menjadi ${status || 'tidak berubah'}`,
+        action: `Order status updated: ${orderId} -> ${status}`,
+        metadata: {
+          orderId,
+          oldStatus: updatedOrder.status,
+          newStatus: status,
+          updatedBy: 'admin'
+        }
       }
     });
     
     return NextResponse.json({
       success: true,
-      message: 'Transaksi berhasil diupdate',
-      transaction: updatedTransaction
+      message: 'Pesanan berhasil diupdate',
+      order: {
+        id: updatedOrder.id,
+        status: updatedOrder.status.toLowerCase(),
+        totalAmount: Number(updatedOrder.totalAmount)
+      }
     });
     
   } catch (error) {
-    console.error('Failed to update transaction:', error);
+    console.error('Failed to update order:', error);
     return NextResponse.json(
-      { error: 'Gagal mengupdate transaksi' },
+      { error: 'Gagal mengupdate pesanan' },
       { status: 500 }
     );
   }

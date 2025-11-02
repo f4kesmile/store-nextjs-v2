@@ -14,12 +14,16 @@ export async function GET(req: NextRequest) {
       where.status = status.toUpperCase();
     }
     
-    // Get transactions with related data
-    const transactions = await prisma.transaction.findMany({
+    // Get orders with items
+    const orders = await prisma.order.findMany({
       where,
       include: {
-        product: true,
-        variant: true,
+        items: {
+          include: {
+            product: true,
+            variant: true
+          }
+        },
         reseller: true
       },
       orderBy: {
@@ -30,64 +34,64 @@ export async function GET(req: NextRequest) {
     });
     
     // Get total count
-    const totalCount = await prisma.transaction.count({ where });
+    const totalCount = await prisma.order.count({ where });
     
-    // Group transactions by customer and created time (simulate orders)
-    const orderGroups = new Map();
-    
-    transactions.forEach(transaction => {
-      const orderKey = `${transaction.customerName}-${transaction.createdAt.toISOString().split('T')[0]}`;
-      
-      if (!orderGroups.has(orderKey)) {
-        orderGroups.set(orderKey, {
-          id: `${transaction.customerName.replace(/\s+/g, '-').toLowerCase()}-${transaction.id}`,
-          customerName: transaction.customerName,
-          customerEmail: '', // We'll need to add this to Transaction model
-          customerPhone: transaction.customerPhone,
-          totalAmount: 0,
-          totalItems: 0,
-          status: transaction.status.toLowerCase(),
-          createdAt: transaction.createdAt.toISOString(),
-          items: [],
-          resellerRef: transaction.reseller?.uniqueId || null
-        });
-      }
-      
-      const order = orderGroups.get(orderKey);
-      order.totalAmount += Number(transaction.totalPrice);
-      order.totalItems += transaction.quantity;
-      order.items.push({
-        productId: transaction.productId,
-        productName: transaction.product.name,
-        variantName: transaction.variant?.name,
-        variantValue: transaction.variant?.value,
-        quantity: transaction.quantity,
-        price: Number(transaction.totalPrice),
-        notes: transaction.notes
-      });
-    });
-    
-    const orders = Array.from(orderGroups.values());
+    // Transform orders to expected format
+    const transformedOrders = orders.map(order => ({
+      id: order.id,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      customerPhone: order.customerPhone,
+      customerAddress: order.customerAddress,
+      totalAmount: Number(order.totalAmount),
+      totalItems: order.totalItems,
+      status: order.status.toLowerCase(),
+      createdAt: order.createdAt.toISOString(),
+      paymentMethod: order.paymentMethod,
+      notes: order.notes,
+      items: order.items.map(item => ({
+        productId: item.productId,
+        productName: item.product.name,
+        variantName: item.variant?.name,
+        variantValue: item.variant?.value,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        totalPrice: Number(item.totalPrice),
+        notes: item.notes
+      })),
+      reseller: order.reseller ? {
+        name: order.reseller.name,
+        uniqueId: order.reseller.uniqueId,
+        whatsappNumber: order.reseller.whatsappNumber
+      } : null
+    }));
     
     // Calculate summary statistics
-    const allTransactions = await prisma.transaction.findMany({
+    const allOrders = await prisma.order.findMany({
       select: {
-        totalPrice: true,
-        status: true
+        totalAmount: true,
+        status: true,
+        createdAt: true
       }
     });
     
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const summary = {
-      totalOrders: orderGroups.size,
-      totalRevenue: allTransactions
-        .filter(t => t.status === 'COMPLETED')
-        .reduce((sum, t) => sum + Number(t.totalPrice), 0),
-      pendingOrders: allTransactions.filter(t => t.status === 'PENDING').length,
-      completedOrders: allTransactions.filter(t => t.status === 'COMPLETED').length
+      totalOrders: allOrders.length,
+      totalRevenue: allOrders
+        .filter(order => order.status === 'COMPLETED')
+        .reduce((sum, order) => sum + Number(order.totalAmount), 0),
+      pendingOrders: allOrders.filter(order => order.status === 'PENDING').length,
+      completedOrders: allOrders.filter(order => order.status === 'COMPLETED').length,
+      todayOrders: allOrders.filter(order => 
+        order.createdAt >= today
+      ).length
     };
     
     return NextResponse.json({
-      orders,
+      orders: transformedOrders,
       pagination: {
         page,
         limit,

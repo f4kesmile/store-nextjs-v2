@@ -7,8 +7,15 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const type = searchParams.get('type');
     
-    // Get activity logs
+    // Build where clause
+    const where: any = {};
+    if (type && type !== 'all') {
+      where.type = type;
+    }
+    
+    // Get activity logs from database
     const activityLogs = await prisma.activityLog.findMany({
+      where,
       include: {
         user: {
           select: {
@@ -23,54 +30,23 @@ export async function GET(req: NextRequest) {
       take: limit
     });
     
-    // Transform to match expected format
+    // Transform to expected format
     const activities = activityLogs.map(log => ({
       id: log.id.toString(),
-      type: 'user_action', // Map from DB action to type
-      title: `User Activity`,
-      description: log.action,
+      type: log.type,
+      title: log.title,
+      description: log.description,
       timestamp: log.timestamp.toISOString(),
-      metadata: {
-        userId: log.userId,
-        username: log.user.username
-      }
+      metadata: log.metadata,
+      user: log.user ? {
+        username: log.user.username,
+        email: log.user.email
+      } : null
     }));
-    
-    // Add recent transaction activities
-    const recentTransactions = await prisma.transaction.findMany({
-      include: {
-        product: true,
-        variant: true
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 20
-    });
-    
-    const transactionActivities = recentTransactions.map(transaction => ({
-      id: `trans-${transaction.id}`,
-      type: 'order_created',
-      title: `Pesanan Baru #${transaction.id}`,
-      description: `${transaction.customerName} membuat pesanan ${transaction.product.name}${transaction.variant ? ` (${transaction.variant.value})` : ''} senilai Rp ${Number(transaction.totalPrice).toLocaleString('id-ID')}`,
-      timestamp: transaction.createdAt.toISOString(),
-      metadata: {
-        transactionId: transaction.id,
-        customerName: transaction.customerName,
-        productName: transaction.product.name,
-        totalPrice: Number(transaction.totalPrice),
-        quantity: transaction.quantity
-      }
-    }));
-    
-    // Combine and sort all activities
-    const allActivities = [...activities, ...transactionActivities]
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, limit);
     
     return NextResponse.json({
-      activities: allActivities,
-      total: allActivities.length
+      activities,
+      total: activities.length
     });
     
   } catch (error) {
