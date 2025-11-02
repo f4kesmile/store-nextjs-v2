@@ -1,0 +1,150 @@
+// prisma/schema.prisma
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id           Int           @id @default(autoincrement())
+    username     String        @unique
+    email        String        @unique
+    passwordHash String        @map("password_hash")
+    roleId       Int           @map("role_id")
+    role         Role          @relation(fields: [roleId], references: [id])
+    activityLogs ActivityLog[]
+    createdAt    DateTime      @default(now()) @map("created_at")
+    updatedAt    DateTime      @updatedAt @map("updated_at")
+
+    @@map("users")
+}
+
+model Role {
+    id          Int      @id @default(autoincrement())
+    name        String   @unique
+    permissions Json // Store permissions as JSON
+    users       User[]
+    createdAt   DateTime @default(now()) @map("created_at")
+    updatedAt   DateTime @updatedAt @map("updated_at")
+
+    @@map("roles")
+}
+
+model Product {
+    id            Int            @id @default(autoincrement())
+    name          String
+    description   String?        @db.Text
+    iconUrl       String?        @map("icon_url")
+    stock         Int            @default(0)
+    price         Decimal        @db.Decimal(10, 2)
+    status        Status         @default(ACTIVE)
+    variants      Variant[]
+    resellerSales ResellerSale[]
+    createdAt     DateTime       @default(now()) @map("created_at")
+    updatedAt     DateTime       @updatedAt @map("updated_at")
+    Transaction   Transaction[]
+    enableNotes   Boolean        @default(true) @map("enable_notes")
+
+    @@map("products")
+}
+
+model Variant {
+    id          Int           @id @default(autoincrement())
+    productId   Int           @map("product_id")
+    product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+    name        String // e.g., "Size", "Color"
+    value       String // e.g., "XL", "Red"
+    stock       Int           @default(0)
+    createdAt   DateTime      @default(now()) @map("created_at")
+    updatedAt   DateTime      @updatedAt @map("updated_at")
+    Transaction Transaction[]
+
+    @@map("variants")
+}
+
+model Reseller {
+    id             Int            @id @default(autoincrement())
+    name           String
+    whatsappNumber String         @map("whatsapp_number")
+    uniqueId       String         @unique @map("unique_id")
+    createdAt      DateTime       @default(now()) @map("created_at")
+    updatedAt      DateTime       @updatedAt @map("updated_at")
+    ResellerSale   ResellerSale[]
+    Transaction    Transaction[]
+
+    @@map("resellers")
+}
+
+model ResellerSale {
+    id         Int      @id @default(autoincrement())
+    resellerId Int      @map("reseller_id")
+    reseller   Reseller @relation(fields: [resellerId], references: [id])
+    productId  Int      @map("product_id")
+    product    Product  @relation(fields: [productId], references: [id])
+    quantity   Int
+    totalPrice Decimal  @map("total_price") @db.Decimal(10, 2)
+    commission Decimal? @db.Decimal(10, 2) // Komisi untuk reseller
+    createdAt  DateTime @default(now()) @map("created_at")
+
+    @@map("reseller_sales")
+}
+
+model SiteSettings {
+    id               Int      @id @default(autoincrement())
+    storeName        String   @default("Store Saya")
+    storeDescription String?  @map("store_description") @db.Text
+    supportWhatsApp  String   @default("6285185031023") @map("support_whatsapp")
+    supportEmail     String   @default("support@store.com") @map("support_email")
+    storeLocation    String?  @map("store_location") @db.Text
+    aboutTitle       String   @default("Tentang Devlog Store") @map("about_title")
+    aboutDescription String?  @map("about_description") @db.Text
+    updatedAt        DateTime @updatedAt @map("updated_at")
+
+    @@map("site_settings")
+}
+
+model Transaction {
+    id            Int               @id @default(autoincrement())
+    productId     Int               @map("product_id")
+    product       Product           @relation(fields: [productId], references: [id])
+    variantId     Int?              @map("variant_id")
+    variant       Variant?          @relation(fields: [variantId], references: [id])
+    resellerId    Int?              @map("reseller_id")
+    reseller      Reseller?         @relation(fields: [resellerId], references: [id])
+    customerName  String?           @map("customer_name")
+    customerPhone String?           @map("customer_phone")
+    quantity      Int
+    totalPrice    Decimal           @map("total_price") @db.Decimal(10, 2)
+    status        TransactionStatus @default(PENDING)
+    notes         String?           @db.Text
+    createdAt     DateTime          @default(now()) @map("created_at")
+    updatedAt     DateTime          @updatedAt @map("updated_at")
+
+    @@map("transactions")
+}
+
+enum TransactionStatus {
+    PENDING
+    CONFIRMED
+    SHIPPED
+    COMPLETED
+    CANCELLED
+}
+
+model ActivityLog {
+    id        Int      @id @default(autoincrement())
+    userId    Int      @map("user_id")
+    user      User     @relation(fields: [userId], references: [id])
+    action    String   @db.Text
+    timestamp DateTime @default(now())
+
+    @@map("activity_logs")
+}
+
+enum Status {
+    ACTIVE
+    INACTIVE
+}
