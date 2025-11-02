@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE `site_settings` ADD COLUMN `favicon_url` VARCHAR(191) NULL,
+    ADD COLUMN `locale` VARCHAR(191) NOT NULL DEFAULT 'id',
+    ADD COLUMN `logo_url` VARCHAR(191) NULL,
+    ADD COLUMN `primary_color` VARCHAR(191) NOT NULL DEFAULT '#2563EB',
+    ADD COLUMN `secondary_color` VARCHAR(191) NOT NULL DEFAULT '#10B981',
+    ADD COLUMN `theme` VARCHAR(191) NOT NULL DEFAULT 'light';

@@ -1,11 +1,45 @@
+import { prisma } from "./prisma";
+
 export type ServerSettings = {
-  storeName?: string;
+  storeName: string;
   storeDescription?: string;
   faviconUrl?: string;
+  logoUrl?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  theme?: string;
 };
 
 export async function getServerSettings(): Promise<ServerSettings> {
-  // Simple server-side fetch to the API route. In real app pull from DB directly.
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/settings`, { cache: "no-store" });
-  try { return await res.json(); } catch { return {}; }
+  try {
+    const settings = await prisma.siteSettings.findFirst();
+    
+    if (!settings) {
+      return {
+        storeName: "Store Saya",
+        storeDescription: "Toko online modern dengan sistem manajemen lengkap",
+        faviconUrl: "/favicon.ico",
+        logoUrl: "",
+        primaryColor: "#2563EB",
+        secondaryColor: "#10B981",
+        theme: "light"
+      };
+    }
+    
+    return {
+      storeName: settings.storeName,
+      storeDescription: settings.storeDescription || "",
+      faviconUrl: settings.faviconUrl || "/favicon.ico",
+      logoUrl: settings.logoUrl || "",
+      primaryColor: settings.primaryColor || "#2563EB", 
+      secondaryColor: settings.secondaryColor || "#10B981",
+      theme: settings.theme || "light"
+    };
+  } catch (error) {
+    return {
+      storeName: "Store Saya",
+      storeDescription: "Toko online modern",
+      faviconUrl: "/favicon.ico"
+    };
+  }
 }

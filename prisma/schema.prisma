@@ -102,6 +102,12 @@ model SiteSettings {
     aboutTitle       String   @default("Tentang Devlog Store") @map("about_title")
     aboutDescription String?  @map("about_description") @db.Text
     updatedAt        DateTime @updatedAt @map("updated_at")
+    logoUrl          String?  @map("logo_url")
+    faviconUrl       String?  @map("favicon_url")
+    primaryColor     String   @default("#2563EB") @map("primary_color")
+    secondaryColor   String   @default("#10B981") @map("secondary_color")
+    theme            String   @default("light")
+    locale           String   @default("id")
 
     @@map("site_settings")
 }
