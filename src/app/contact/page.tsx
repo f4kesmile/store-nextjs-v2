@@ -4,26 +4,29 @@ import { useState } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { HeroSection } from "@/components/ui/hero-section";
 import { SectionHeader } from "@/components/ui/section-header";
+import { FeatureCard } from "@/components/ui/feature-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useToast } from "@/components/ui/toast";
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  MessageCircle, 
-  Send, 
+import {
+  Phone,
+  Mail,
+  MapPin,
   Clock,
+  Send,
+  CheckCircle,
+  Loader2,
+  MessageSquare,
   Users,
-  Headphones,
-  CheckCircle
+  Shield,
+  Zap
 } from "lucide-react";
 
 export default function ContactPage() {
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
   const toast = useToast();
   const [formData, setFormData] = useState({
     name: "",
@@ -31,41 +34,7 @@ export default function ContactPage() {
     subject: "",
     message: ""
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      
-      if (response.ok) {
-        toast({ 
-          title: "Pesan terkirim!", 
-          description: "Terima kasih, kami akan merespons segera.",
-          variant: "success" 
-        });
-        setFormData({ name: "", email: "", subject: "", message: "" });
-      } else {
-        throw new Error('Failed to send message');
-      }
-    } catch (error) {
-      toast({ 
-        title: "Gagal mengirim", 
-        description: "Silakan coba lagi atau hubungi kami langsung.",
-        variant: "destructive" 
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -74,138 +43,159 @@ export default function ContactPage() {
     }));
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "✅ Pesan berhasil dikirim!",
+          description: "Kami akan membalas dalam 1-2 jam kerja",
+          variant: "success"
+        });
+        
+        setFormData({ name: "", email: "", subject: "", message: "" });
+      } else {
+        throw new Error(result.error || 'Gagal mengirim pesan');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Gagal mengirim pesan",
+        description: error.message || "Silakan coba lagi",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <PageLayout>
       {/* Hero Section */}
       <HeroSection
-        subtitle="Get in Touch"
-        title="Hubungi Kami"
-        description="Kami siap membantu Anda kapan saja. Tim customer service profesional kami akan merespons dengan cepat."
-        variant="minimal"
+        subtitle="Hubungi Kami"
+        title="Mari Berkolaborasi"
+        description="Kami siap membantu Anda dengan layanan terbaik. Hubungi tim customer service untuk konsultasi gratis"
+        variant="gradient"
       />
 
       {/* Contact Methods */}
-      <section className="py-20 px-4 bg-gray-50">
+      <section className="py-12 sm:py-16 px-4">
         <div className="container">
           <SectionHeader
             title="Cara Menghubungi Kami"
-            description="Pilih metode yang paling nyaman untuk Anda"
-            icon={<MessageCircle className="w-6 h-6" />}
-            centered
-            className="mb-16"
+            description="Pilih metode komunikasi yang paling nyaman untuk Anda"
+            icon={<MessageSquare className="w-6 h-6" />}
+            className="mb-8 sm:mb-12"
           />
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {/* WhatsApp */}
             {settings.supportWhatsApp && (
-              <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 bg-gradient-to-br from-green-50 to-green-100">
-                <CardContent className="p-8 text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-green-500 grid place-items-center group-hover:scale-110 transition-transform duration-300">
-                    <Phone className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-gray-900">WhatsApp</h3>
-                    <p className="text-gray-600">Chat langsung untuk respon cepat</p>
-                    <p className="text-green-600 font-semibold">{settings.supportWhatsApp}</p>
-                  </div>
+              <FeatureCard
+                icon={<Phone className="w-6 h-6 sm:w-8 sm:h-8" />}
+                title="WhatsApp"
+                description="Chat langsung dengan customer service kami untuk respon cepat"
+                variant="gradient"
+                className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-xl"
+                action={
                   <Button 
-                    className="w-full bg-green-500 hover:bg-green-600 text-white" 
-                    asChild
+                    asChild 
+                    className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold"
                   >
                     <a
                       href={`https://wa.me/${settings.supportWhatsApp.replace(/[^0-9]/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <MessageCircle className="w-4 h-4 mr-2" />
+                      <Phone className="w-4 h-4 mr-2" />
                       Chat Sekarang
                     </a>
                   </Button>
-                </CardContent>
-              </Card>
+                }
+              />
             )}
 
             {/* Email */}
             {settings.supportEmail && (
-              <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 bg-gradient-to-br from-blue-50 to-blue-100">
-                <CardContent className="p-8 text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-blue-500 grid place-items-center group-hover:scale-110 transition-transform duration-300">
-                    <Mail className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-gray-900">Email</h3>
-                    <p className="text-gray-600">Untuk pertanyaan detail</p>
-                    <p className="text-blue-600 font-semibold text-sm">{settings.supportEmail}</p>
-                  </div>
+              <FeatureCard
+                icon={<Mail className="w-6 h-6 sm:w-8 sm:h-8" />}
+                title="Email"
+                description="Kirim detail pertanyaan Anda melalui email untuk dokumentasi lengkap"
+                variant="gradient"
+                className="border-blue-200 bg-gradient-to-br from-blue-50 to-sky-50 hover:shadow-xl"
+                action={
                   <Button 
-                    variant="outline" 
-                    className="w-full border-blue-500 text-blue-600 hover:bg-blue-50" 
-                    asChild
+                    asChild 
+                    variant="outline"
+                    className="w-full border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold"
                   >
                     <a href={`mailto:${settings.supportEmail}`}>
                       <Mail className="w-4 h-4 mr-2" />
                       Kirim Email
                     </a>
                   </Button>
-                </CardContent>
-              </Card>
+                }
+              />
             )}
 
             {/* Location */}
-            {settings.storeLocation && (
-              <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 bg-gradient-to-br from-purple-50 to-purple-100">
-                <CardContent className="p-8 text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-purple-500 grid place-items-center group-hover:scale-110 transition-transform duration-300">
-                    <MapPin className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-gray-900">Lokasi</h3>
-                    <p className="text-gray-600">Kantor pusat kami</p>
-                    <p className="text-purple-600 font-semibold text-sm">{settings.storeLocation}</p>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-purple-500 text-purple-600 hover:bg-purple-50"
-                  >
-                    <MapPin className="w-4 h-4 mr-2" />
-                    Lihat Maps
-                  </Button>
-                </CardContent>
-              </Card>
+            {settings.businessAddress && (
+              <FeatureCard
+                icon={<MapPin className="w-6 h-6 sm:w-8 sm:h-8" />}
+                title="Alamat Kantor"
+                description={settings.businessAddress}
+                variant="gradient"
+                className="border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 hover:shadow-xl sm:col-span-2 lg:col-span-1"
+              />
             )}
           </div>
         </div>
       </section>
 
-      {/* Contact Form & Business Hours */}
-      <section className="py-20 px-4">
+      {/* Contact Form & Info */}
+      <section className="py-12 sm:py-16 px-4 bg-gray-50">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Contact Form */}
-            <Card className="shadow-xl border-0">
-              <CardContent className="p-8">
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-gray-900">Kirim Pesan</h3>
-                    <p className="text-gray-600">Isi form di bawah ini dan kami akan merespons dalam 24 jam</p>
-                  </div>
-
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-6 sm:space-y-8">
+              <div className="space-y-2 sm:space-y-4">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Kirim Pesan</h2>
+                <p className="text-sm sm:text-base text-gray-600">
+                  Isi form di bawah ini dan kami akan merespons dalam 1-2 jam kerja
+                </p>
+              </div>
+              
+              <Card className="shadow-xl">
+                <CardContent className="p-4 sm:p-8">
+                  <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Nama Lengkap</Label>
+                        <Label htmlFor="name" className="text-sm font-medium">Nama Lengkap *</Label>
                         <Input
                           id="name"
                           name="name"
                           value={formData.name}
                           onChange={handleInputChange}
-                          placeholder="Masukkan nama Anda"
+                          placeholder="Nama Anda"
                           required
-                          disabled={isSubmitting}
+                          disabled={submitting}
+                          className="h-10 sm:h-11"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email" className="text-sm font-medium">Email *</Label>
                         <Input
                           id="email"
                           name="email"
@@ -214,47 +204,49 @@ export default function ContactPage() {
                           onChange={handleInputChange}
                           placeholder="email@example.com"
                           required
-                          disabled={isSubmitting}
+                          disabled={submitting}
+                          className="h-10 sm:h-11"
                         />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="subject">Subject</Label>
+                      <Label htmlFor="subject" className="text-sm font-medium">Subjek *</Label>
                       <Input
                         id="subject"
                         name="subject"
                         value={formData.subject}
                         onChange={handleInputChange}
-                        placeholder="Topik pertanyaan Anda"
+                        placeholder="Topik yang ingin dibahas"
                         required
-                        disabled={isSubmitting}
+                        disabled={submitting}
+                        className="h-10 sm:h-11"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="message">Pesan</Label>
+                      <Label htmlFor="message" className="text-sm font-medium">Pesan *</Label>
                       <textarea
                         id="message"
                         name="message"
                         value={formData.message}
                         onChange={handleInputChange}
-                        placeholder="Tuliskan pesan Anda di sini..."
+                        placeholder="Jelaskan pertanyaan atau kebutuhan Anda secara detail..."
                         required
-                        disabled={isSubmitting}
-                        rows={6}
-                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50"
+                        disabled={submitting}
+                        rows={5}
+                        className="w-full px-3 py-2 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 resize-none"
                       />
                     </div>
                     
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90" 
-                      disabled={isSubmitting}
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 text-sm sm:text-base py-3 sm:py-4 font-semibold"
                     >
-                      {isSubmitting ? (
+                      {submitting ? (
                         <>
-                          <Clock className="w-4 h-4 mr-2 animate-spin" />
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           Mengirim...
                         </>
                       ) : (
@@ -265,84 +257,75 @@ export default function ContactPage() {
                       )}
                     </Button>
                   </form>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Business Hours & Additional Info */}
-            <div className="space-y-8">
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Business Info */}
+            <div className="space-y-6 sm:space-y-8">
               {/* Business Hours */}
-              <Card className="shadow-xl border-0">
-                <CardContent className="p-8">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-primary to-brand-secondary grid place-items-center">
-                        <Clock className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">Jam Operasional</h3>
-                        <p className="text-gray-600">Waktu respons customer service</p>
-                      </div>
+              <Card className="shadow-lg">
+                <CardContent className="p-4 sm:p-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-brand-primary" />
+                    <h3 className="text-lg sm:text-xl font-semibold">Jam Operasional</h3>
+                  </div>
+                  <div className="space-y-2 text-sm sm:text-base">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Senin - Jumat:</span>
+                      <span className="font-semibold">09:00 - 18:00 WIB</span>
                     </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-700">Senin - Jumat</span>
-                        <span className="font-semibold text-green-600">09:00 - 18:00 WIB</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-700">Sabtu</span>
-                        <span className="font-semibold text-green-600">09:00 - 15:00 WIB</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-700">Minggu</span>
-                        <span className="font-semibold text-red-600">Tutup</span>
-                      </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Sabtu:</span>
+                      <span className="font-semibold">09:00 - 15:00 WIB</span>
                     </div>
-
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <Headphones className="w-5 h-5 text-blue-600 mt-0.5" />
-                        <div className="text-sm">
-                          <p className="font-semibold text-blue-900">Support 24/7</p>
-                          <p className="text-blue-700">WhatsApp tersedia kapan saja untuk urgent matters</p>
-                        </div>
-                      </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Minggu:</span>
+                      <span className="font-semibold text-red-500">Tutup</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
+              
               {/* Why Choose Us */}
-              <Card className="shadow-xl border-0">
-                <CardContent className="p-8">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-600 grid place-items-center">
-                        <Users className="w-6 h-6 text-white" />
+              <Card className="shadow-lg">
+                <CardContent className="p-4 sm:p-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-brand-primary" />
+                    <h3 className="text-lg sm:text-xl font-semibold">Mengapa Pilih Kami</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      "Respon cepat dalam 1-2 jam kerja",
+                      "Customer service berpengalaman", 
+                      "Produk digital berkualitas tinggi",
+                      "Garansi uang kembali 100%",
+                      "Support teknis 24/7 via WhatsApp"
+                    ].map((benefit, index) => (
+                      <div key={index} className="flex items-start gap-2 sm:gap-3">
+                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm sm:text-base text-gray-700">{benefit}</span>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">Mengapa Pilih Kami?</h3>
-                        <p className="text-gray-600">Komitmen layanan terbaik</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {[
-                        "Respons cepat dalam 1-2 jam",
-                        "Tim support berpengalaman", 
-                        "Solusi tepat untuk setiap kebutuhan",
-                        "Layanan after-sales terjamin"
-                      ].map((item, index) => (
-                        <div key={index} className="flex items-center gap-3">
-                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                          <span className="text-gray-700">{item}</span>
-                        </div>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
+              
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <Card className="text-center bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="text-xl sm:text-2xl font-bold text-blue-600">1000+</div>
+                    <div className="text-xs sm:text-sm text-blue-700">Customer Puas</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="text-xl sm:text-2xl font-bold text-green-600">24/7</div>
+                    <div className="text-xs sm:text-sm text-green-700">Support Ready</div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>
