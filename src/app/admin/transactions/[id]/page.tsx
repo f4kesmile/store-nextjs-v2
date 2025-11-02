@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { PageLayout } from "@/components/layout/PageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Package, User, MessageCircle, Download, Trash2, Save, Phone } from "lucide-react";
+import { Package, MessageCircle, Download, Trash2, Save, ArrowLeft } from "lucide-react";
 
 interface OrderItem {
   productId: number;
@@ -161,53 +160,47 @@ export default function TransactionDetailPage() {
 
   if (loading) {
     return (
-      <PageLayout>
-        <div className="container py-8">
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto mb-4"></div>
-              <p className="text-gray-600">Memuat detail transaksi...</p>
-            </div>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Memuat detail transaksi...</p>
         </div>
-      </PageLayout>
+      </div>
     );
   }
 
   if (!order) {
     return (
-      <PageLayout>
-        <div className="container py-8">
-          <div className="text-center">
-            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Transaksi Tidak Ditemukan</h2>
-            <p className="text-gray-600 mb-6">Transaksi yang Anda cari tidak ditemukan atau telah dihapus.</p>
-            <Button onClick={() => router.back()}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Kembali
-            </Button>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Transaksi Tidak Ditemukan</h2>
+          <p className="text-gray-600 mb-6">Transaksi yang Anda cari tidak ditemukan atau telah dihapus.</p>
+          <Button onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Kembali
+          </Button>
         </div>
-      </PageLayout>
+      </div>
     );
   }
 
   const currentStatus = STATUS_OPTIONS.find(s => s.value === status);
 
   return (
-    <PageLayout>
-      <div className="container py-8 space-y-6">
-        {/* Header with Actions */}
-        <div className="bg-white sticky top-0 z-10 pb-4 border-b">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Actions Header */}
+        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => router.back()}>
+              <Button variant="outline" onClick={() => router.back()} size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Kembali
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">Detail Transaksi #{order.id}</h1>
-                <p className="text-sm text-gray-500 mt-1">
+                <h1 className="text-xl font-bold">Invoice #{order.id}</h1>
+                <p className="text-sm text-gray-500">
                   {new Date(order.createdAt).toLocaleDateString("id-ID", {
                     year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit"
                   })}
@@ -222,151 +215,138 @@ export default function TransactionDetailPage() {
               </Button>
               <Button variant="outline" onClick={downloadInvoice} size="sm">
                 <Download className="w-4 h-4 mr-2" />
-                Invoice
+                Download PDF
               </Button>
               <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)} size="sm">
                 <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+                Hapus
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Order Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="w-5 h-5" />
-                  Informasi Pesanan
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Invoice */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-lg shadow-sm border p-8 print:shadow-none print:border-none">
+              {/* Invoice Header */}
+              <div className="border-b pb-6 mb-8">
+                <div className="flex justify-between items-start">
                   <div>
-                    <span className="font-medium">Status:</span>
-                    <Badge className={`ml-2 capitalize ${currentStatus?.color}`}>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">INVOICE</h2>
+                    <p className="text-lg font-semibold text-blue-600">#{order.id}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Tanggal Invoice</p>
+                    <p className="font-semibold">{new Date(order.createdAt).toLocaleDateString('id-ID')}</p>
+                    <Badge className={`mt-2 ${currentStatus?.color}`}>
                       {currentStatus?.label}
                     </Badge>
                   </div>
-                  <div>
-                    <span className="font-medium">Payment:</span>
-                    <span className="ml-2">{order.paymentMethod}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Total Items:</span>
-                    <span className="ml-2">{order.totalItems} item</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Total Amount:</span>
-                    <span className="ml-2 font-semibold text-brand-primary">
-                      Rp {order.totalAmount?.toLocaleString("id-ID")}
-                    </span>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Customer Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Informasi Customer
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <span className="font-medium">Nama:</span>
-                    <p className="mt-1">{order.customerName}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">Email:</span>
-                    <p className="mt-1">{order.customerEmail}</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">Telepon:</span>
-                    <p className="mt-1 flex items-center gap-2">
-                      {order.customerPhone}
-                      <Button variant="ghost" size="sm" onClick={openWhatsApp}>
-                        <Phone className="w-3 h-3" />
-                      </Button>
-                    </p>
-                  </div>
-                  <div>
-                    <span className="font-medium">Alamat:</span>
-                    <p className="mt-1 text-sm text-gray-600">{order.customerAddress || '-'}</p>
+              {/* Bill To */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Bill To</h3>
+                  <div className="space-y-1">
+                    <p className="font-semibold text-gray-900">{order.customerName}</p>
+                    <p className="text-gray-600">{order.customerEmail}</p>
+                    <p className="text-gray-600">{order.customerPhone}</p>
+                    {order.customerAddress && (
+                      <p className="text-gray-600 text-sm">{order.customerAddress}</p>
+                    )}
                   </div>
                 </div>
-                
-                {order.reseller && (
-                  <div className="pt-4 border-t">
-                    <span className="font-medium text-blue-600">Reseller:</span>
-                    <div className="mt-2 bg-blue-50 p-3 rounded-lg">
-                      <p className="font-semibold">{order.reseller.name}</p>
-                      <p className="text-sm text-gray-600">ID: {order.reseller.uniqueId}</p>
-                      <p className="text-sm text-gray-600">WA: {order.reseller.whatsappNumber}</p>
-                    </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment Info</h3>
+                  <div className="space-y-1">
+                    <p><span className="text-gray-600">Method:</span> <span className="font-semibold">{order.paymentMethod}</span></p>
+                    <p><span className="text-gray-600">Total Items:</span> <span className="font-semibold">{order.totalItems}</span></p>
+                    {order.reseller && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-semibold text-blue-800">Reseller</p>
+                        <p className="text-sm text-blue-700">{order.reseller.name}</p>
+                        <p className="text-xs text-blue-600">ID: {order.reseller.uniqueId}</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
+              </div>
 
-            {/* Order Items */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Item Pesanan ({order.items?.length || 0})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {order.items?.map((item: OrderItem, index: number) => (
-                    <div key={index} className="flex justify-between items-start p-4 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900">{item.productName}</h4>
-                        {item.variantName && item.variantValue && (
-                          <Badge variant="secondary" className="text-xs mt-1">
-                            {item.variantName}: {item.variantValue}
-                          </Badge>
-                        )}
-                        {item.notes && (
-                          <p className="text-xs text-gray-500 mt-2 bg-white p-2 rounded border-l-4 border-blue-200">
-                            <strong>Catatan:</strong> {item.notes}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right ml-4">
-                        <p className="font-semibold text-gray-900">
-                          Rp {item.unitPrice?.toLocaleString("id-ID")} × {item.quantity}
-                        </p>
-                        <p className="text-sm font-bold text-brand-primary">
-                          Total: Rp {item.totalPrice?.toLocaleString("id-ID")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {(!order.items || order.items.length === 0) && (
-                    <div className="text-center py-8 text-gray-500">
-                      <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p>Tidak ada item dalam pesanan ini</p>
-                    </div>
-                  )}
+              {/* Items Table */}
+              <div className="mb-8">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Item</th>
+                        <th className="text-center py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Qty</th>
+                        <th className="text-right py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Price</th>
+                        <th className="text-right py-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {order.items?.map((item: OrderItem, index: number) => (
+                        <tr key={index} className="border-b border-gray-100">
+                          <td className="py-4">
+                            <div>
+                              <p className="font-semibold text-gray-900">{item.productName}</p>
+                              {item.variantName && item.variantValue && (
+                                <p className="text-sm text-gray-500">{item.variantName}: {item.variantValue}</p>
+                              )}
+                              {item.notes && (
+                                <p className="text-xs text-gray-400 mt-1 italic">{item.notes}</p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-4 text-center">
+                            <span className="font-semibold">{item.quantity}</span>
+                          </td>
+                          <td className="py-4 text-right">
+                            <span className="text-gray-600">Rp {item.unitPrice?.toLocaleString("id-ID")}</span>
+                          </td>
+                          <td className="py-4 text-right">
+                            <span className="font-semibold">Rp {item.totalPrice?.toLocaleString("id-ID")}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              {/* Total */}
+              <div className="border-t pt-6">
+                <div className="flex justify-end">
+                  <div className="w-full max-w-sm">
+                    <div className="flex justify-between py-2 text-lg font-bold">
+                      <span>Total</span>
+                      <span className="text-blue-600">Rp {order.totalAmount?.toLocaleString("id-ID")}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {order.notes && (
+                <div className="border-t pt-6 mt-6">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Notes</h3>
+                  <p className="text-gray-600">{order.notes}</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Actions Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Update Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          {/* Edit Panel */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm border p-6 sticky top-4">
+              <h3 className="text-lg font-semibold mb-4">Edit Invoice</h3>
+              
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Status Transaksi</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                   <Select value={status} onValueChange={setStatus}>
                     <SelectTrigger>
                       <SelectValue />
@@ -374,8 +354,10 @@ export default function TransactionDetailPage() {
                     <SelectContent>
                       {STATUS_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${option.color.split(' ')[0]}`}></span>
-                          {option.label}
+                          <div className="flex items-center">
+                            <span className={`inline-block w-2 h-2 rounded-full mr-2 ${option.color.split(' ')[0]}`}></span>
+                            {option.label}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -383,12 +365,13 @@ export default function TransactionDetailPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Catatan Internal</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
                   <Textarea
-                    placeholder="Tambahkan catatan untuk transaksi ini..."
+                    placeholder="Catatan internal..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={4}
+                    className="text-sm"
                   />
                 </div>
                 
@@ -396,12 +379,13 @@ export default function TransactionDetailPage() {
                   onClick={updateOrder} 
                   disabled={updating} 
                   className="w-full"
+                  size="sm"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {updating ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  {updating ? 'Menyimpan...' : 'Simpan'}
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -409,16 +393,16 @@ export default function TransactionDetailPage() {
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold mb-4">Konfirmasi Hapus Transaksi</h3>
+              <h3 className="text-lg font-semibold mb-4">Konfirmasi Hapus</h3>
               <p className="text-gray-600 mb-6">
-                Apakah Anda yakin ingin menghapus transaksi #{order.id}? 
-                Tindakan ini tidak dapat dibatalkan.
+                Yakin ingin menghapus invoice #{order.id}? Tindakan ini tidak dapat dibatalkan.
               </p>
               <div className="flex gap-3 justify-end">
                 <Button 
                   variant="outline" 
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={updating}
+                  size="sm"
                 >
                   Batal
                 </Button>
@@ -426,14 +410,15 @@ export default function TransactionDetailPage() {
                   variant="destructive" 
                   onClick={deleteOrder}
                   disabled={updating}
+                  size="sm"
                 >
-                  {updating ? 'Menghapus...' : 'Hapus Transaksi'}
+                  {updating ? 'Menghapus...' : 'Hapus'}
                 </Button>
               </div>
             </div>
           </div>
         )}
       </div>
-    </PageLayout>
+    </div>
   );
 }

@@ -1,4 +1,3 @@
-// src/contexts/CartContext.tsx - GANTI SELURUH ISI
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -6,27 +5,21 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 interface CartItem {
   productId: number;
   productName: string;
-  productPrice: number;
-  productImage: string;
+  productPrice: number | string;
+  productImage?: string;
   variantId?: number;
   variantName?: string;
   variantValue?: string;
   quantity: number;
+  maxStock?: number;
   notes?: string;
-  maxStock: number;
-  enableNotes?: boolean;
 }
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (item: CartItem) => void;
+  addToCart: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
+  updateQuantity: (productId: number, variantId: number | undefined, quantity: number) => void;
   removeFromCart: (productId: number, variantId?: number) => void;
-  updateQuantity: (
-    productId: number,
-    quantity: number,
-    variantId?: number
-  ) => void;
-  updateNotes: (productId: number, notes: string, variantId?: number) => void;
   clearCart: () => void;
   getCartTotal: () => number;
   getCartCount: () => number;
@@ -34,122 +27,90 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
 
   useEffect(() => {
-    const savedCart = localStorage.getItem("shopping-cart");
+    const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     }
   }, []);
 
   useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem("shopping-cart", JSON.stringify(cart));
-    } else {
-      localStorage.removeItem("shopping-cart");
-    }
+    localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (item: CartItem) => {
-    setCart((prev) => {
-      const existingIndex = prev.findIndex(
-        (i) => i.productId === item.productId && i.variantId === item.variantId
+  const addToCart = (item: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
+    setCart(prevCart => {
+      const existingItemIndex = prevCart.findIndex(
+        cartItem => 
+          cartItem.productId === item.productId && 
+          (cartItem.variantId || 0) === (item.variantId || 0)
       );
 
-      if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += item.quantity;
-        updated[existingIndex].notes =
-          item.notes || updated[existingIndex].notes;
-        return updated;
+      if (existingItemIndex !== -1) {
+        const updatedCart = [...prevCart];
+        updatedCart[existingItemIndex].quantity += quantity;
+        return updatedCart;
+      } else {
+        return [...prevCart, { ...item, quantity }];
       }
-
-      return [...prev, item];
     });
   };
 
+  const updateQuantity = (productId: number, variantId: number | undefined, quantity: number) => {
+    setCart(prevCart => 
+      prevCart.map(item => 
+        item.productId === productId && (item.variantId || 0) === (variantId || 0)
+          ? { ...item, quantity: Math.max(1, quantity) }
+          : item
+      )
+    );
+  };
+
   const removeFromCart = (productId: number, variantId?: number) => {
-    setCart((prev) =>
-      prev.filter(
-        (item) =>
-          !(item.productId === productId && item.variantId === variantId)
-      )
-    );
-  };
-
-  const updateQuantity = (
-    productId: number,
-    quantity: number,
-    variantId?: number
-  ) => {
-    if (quantity <= 0) {
-      removeFromCart(productId, variantId);
-      return;
-    }
-
-    setCart((prev) =>
-      prev.map((item) =>
-        item.productId === productId && item.variantId === variantId
-          ? { ...item, quantity: Math.min(quantity, item.maxStock) }
-          : item
-      )
-    );
-  };
-
-  const updateNotes = (
-    productId: number,
-    notes: string,
-    variantId?: number
-  ) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.productId === productId && item.variantId === variantId
-          ? { ...item, notes }
-          : item
+    setCart(prevCart => 
+      prevCart.filter(item => 
+        !(item.productId === productId && (item.variantId || 0) === (variantId || 0))
       )
     );
   };
 
   const clearCart = () => {
     setCart([]);
-    localStorage.removeItem("shopping-cart");
   };
 
   const getCartTotal = () => {
-    return cart.reduce(
-      (total, item) => total + item.productPrice * item.quantity,
-      0
-    );
+    return cart.reduce((total, item) => {
+      const price = typeof item.productPrice === 'string' 
+        ? parseFloat(item.productPrice.replace(/[^0-9.]/g, ''))
+        : Number(item.productPrice);
+      return total + (price * item.quantity);
+    }, 0);
   };
 
   const getCartCount = () => {
     return cart.reduce((count, item) => count + item.quantity, 0);
   };
 
-  return (
-    <CartContext.Provider
-      value={{
-        cart,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        updateNotes,
-        clearCart,
-        getCartTotal,
-        getCartCount,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
-}
+  const value: CartContextType = {
+    cart,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+    getCartTotal,
+    getCartCount,
+  };
 
-export function useCart() {
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+};
+
+export const useCart = () => {
   const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart must be used within CartProvider");
+  if (context === undefined) {
+    throw new Error("useCart must be used within a CartProvider");
   }
   return context;
-}
+};
