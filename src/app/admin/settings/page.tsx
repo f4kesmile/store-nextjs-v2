@@ -10,7 +10,8 @@ const Icons = { gear: (p:any)=>(<svg viewBox="0 0 24 24" fill="none" stroke="cur
 
 export default function SettingsPage(){
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [formData, setFormData] = useState({
     storeName: "",
     supportEmail: "",
@@ -29,16 +30,17 @@ export default function SettingsPage(){
     finally{ setSaving(false); }
   }
 
-  async function uploadLogo(file?: File){
+  async function uploadFile(kind: "logo" | "favicon", file?: File){
     if(!file) return;
-    setUploading(true);
+    if(kind === "logo") setUploadingLogo(true); else setUploadingFavicon(true);
     try{
       const fd = new FormData();
-      fd.append("logo", file);
-      const res = await fetch("/api/upload/logo", { method: "POST", body: fd });
+      fd.append(kind, file);
+      const res = await fetch(`/api/upload/${kind}`, { method: "POST", body: fd });
       const data = await res.json();
-      if(data.logoPath){ setFormData(prev=>({ ...prev, logoUrl: data.logoPath })); }
-    } finally{ setUploading(false); }
+      if(data.logoPath && kind === "logo"){ setFormData(prev=>({ ...prev, logoUrl: data.logoPath })); }
+      if(data.faviconPath && kind === "favicon"){ setFormData(prev=>({ ...prev, faviconUrl: data.faviconPath })); }
+    } finally{ if(kind === "logo") setUploadingLogo(false); else setUploadingFavicon(false); }
   }
 
   return (
@@ -55,45 +57,60 @@ export default function SettingsPage(){
         </CardHeader>
       </Card>
 
-      <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Informasi Toko</CardTitle><CardDescription>Nama dan kontak</CardDescription></CardHeader>
-          <CardContent className="space-y-3">
-            <Input placeholder="Nama Toko" value={formData.storeName} onChange={(e)=>setFormData({...formData, storeName: e.target.value})}/>
-            <Input placeholder="Email Toko" value={formData.supportEmail} onChange={(e)=>setFormData({...formData, supportEmail: e.target.value})}/>
-            <Input placeholder="No. WhatsApp" value={formData.supportWhatsApp} onChange={(e)=>setFormData({...formData, supportWhatsApp: e.target.value})}/>
-            <Button disabled={saving}>{saving?"Menyimpan...":"Simpan"}</Button>
-          </CardContent>
-        </Card>
+      <form onSubmit={submit} className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Informasi Toko</CardTitle><CardDescription>Nama dan kontak</CardDescription></CardHeader>
+            <CardContent className="space-y-3">
+              <Input placeholder="Nama Toko" value={formData.storeName} onChange={(e)=>setFormData({...formData, storeName: e.target.value})}/>
+              <Input placeholder="Email Toko" value={formData.supportEmail} onChange={(e)=>setFormData({...formData, supportEmail: e.target.value})}/>
+              <Input placeholder="No. WhatsApp" value={formData.supportWhatsApp} onChange={(e)=>setFormData({...formData, supportWhatsApp: e.target.value})}/>
+              <Button disabled={saving}>{saving?"Menyimpan...":"Simpan"}</Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Preferensi</CardTitle><CardDescription>Bahasa/Locale</CardDescription></CardHeader>
+            <CardContent className="space-y-3">
+              <Select value={formData.locale} onValueChange={(v)=>setFormData({...formData, locale:v})}>
+                <SelectTrigger><SelectValue placeholder="Bahasa"/></SelectTrigger>
+                <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
+              </Select>
+              <Button variant="outline" disabled={saving}>{saving?"Menyimpan...":"Simpan Preferensi"}</Button>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Preferensi</CardTitle><CardDescription>Bahasa/Locale</CardDescription></CardHeader>
-          <CardContent className="space-y-3">
-            <Select value={formData.locale} onValueChange={(v)=>setFormData({...formData, locale:v})}>
-              <SelectTrigger><SelectValue placeholder="Bahasa"/></SelectTrigger>
-              <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
-            </Select>
-            <Button variant="outline" disabled={saving}>{saving?"Menyimpan...":"Simpan Preferensi"}</Button>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
           <CardHeader className="pb-2"><CardTitle className="text-base">Brand & Tema</CardTitle><CardDescription>Logo, favicon, warna, dan tema</CardDescription></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-3">
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Upload Logo</label>
-                <div className="flex items-center gap-3">
-                  <input type="file" accept="image/*" onChange={(e)=>uploadLogo(e.target.files?.[0])} />
-                  <Button type="button" variant="outline" disabled>{uploading?"Mengunggah...":"Pilih File"}</Button>
-                </div>
-                {formData.logoUrl && (
-                  <div className="h-12 w-12 rounded bg-muted overflow-hidden grid place-items-center">
-                    <img src={formData.logoUrl} alt="logo" className="max-h-12" />
-                  </div>
-                )}
+              <label className="text-sm text-muted-foreground">Upload Logo</label>
+              <div className="flex items-center gap-3">
+                <input type="file" accept="image/*" onChange={(e)=>uploadFile("logo", e.target.files?.[0])} />
+                <Button type="button" variant="outline" disabled>{uploadingLogo?"Mengunggah...":"Pilih File"}</Button>
               </div>
-              <Input placeholder="Favicon URL" value={formData.faviconUrl} onChange={(e)=>setFormData({...formData, faviconUrl: e.target.value})}/>
+              {formData.logoUrl && (
+                <div className="h-12 w-12 rounded bg-muted overflow-hidden grid place-items-center">
+                  <img src={formData.logoUrl} alt="logo" className="max-h-12" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm text-muted-foreground">Upload Favicon</label>
+              <div className="flex items-center gap-3">
+                <input type="file" accept="image/x-icon,image/png" onChange={(e)=>uploadFile("favicon", e.target.files?.[0])} />
+                <Button type="button" variant="outline" disabled>{uploadingFavicon?"Mengunggah...":"Pilih File"}</Button>
+              </div>
+              {formData.faviconUrl && (
+                <div className="h-8 w-8 rounded bg-muted overflow-hidden grid place-items-center">
+                  <img src={formData.faviconUrl} alt="favicon" className="max-h-8" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-sm text-muted-foreground">Primary</label>
@@ -109,7 +126,8 @@ export default function SettingsPage(){
                 <SelectContent><SelectItem value="light">Light</SelectItem><SelectItem value="dark">Dark</SelectItem></SelectContent>
               </Select>
             </div>
-            <div className="space-y-3">
+
+            <div className="md:col-span-3 space-y-3">
               <div className="text-sm text-muted-foreground">Preview</div>
               <div className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-3">
@@ -119,6 +137,12 @@ export default function SettingsPage(){
                   <div className="flex gap-2">
                     <span className="size-6 rounded" style={{ background: formData.primaryColor }} />
                     <span className="size-6 rounded" style={{ background: formData.secondaryColor }} />
+                  </div>
+                  <div className="ml-auto flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Favicon</span>
+                    <div className="size-6 rounded overflow-hidden bg-muted grid place-items-center">
+                      {formData.faviconUrl ? (<img src={formData.faviconUrl} alt="favicon" className="max-h-6" />) : (<div className="text-[10px] text-muted-foreground">ico</div>)}
+                    </div>
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground">Tema: {formData.theme}</div>
