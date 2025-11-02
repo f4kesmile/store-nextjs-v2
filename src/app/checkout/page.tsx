@@ -17,9 +17,7 @@ import {
   CreditCard,
   Package,
   User,
-  MapPin,
   Phone,
-  Mail,
   CheckCircle,
   ArrowLeft,
   ArrowRight,
@@ -43,7 +41,7 @@ function CheckoutContent() {
   const { settings } = useSettings();
   const toast = useToast();
   
-  const { cart, getTotalPrice, getTotalItems, clearCart } = useCart();
+  const { cart, getCartTotal, getCartCount, clearCart } = useCart();
   const [reseller, setReseller] = useState<Reseller | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -93,8 +91,8 @@ function CheckoutContent() {
       const orderData = {
         ...formData,
         items: cart,
-        totalAmount: getTotalPrice(),
-        totalItems: getTotalItems(),
+        totalAmount: getCartTotal(),
+        totalItems: getCartCount(),
         resellerId: reseller?.id,
         resellerRef: resellerRef
       };
@@ -119,7 +117,7 @@ function CheckoutContent() {
         
         // Redirect to success page or WhatsApp
         if (reseller?.whatsappNumber) {
-          const message = `Halo ${reseller.name}, saya ingin melanjutkan pesanan #${result.orderId}. Total: Rp ${getTotalPrice().toLocaleString('id-ID')}`;
+          const message = `Halo ${reseller.name}, saya ingin melanjutkan pesanan #${result.orderId}. Total: Rp ${getCartTotal().toLocaleString('id-ID')}`;
           window.open(`https://wa.me/${reseller.whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
         }
         
@@ -191,11 +189,13 @@ function CheckoutContent() {
               
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Customer Information */}
-                <Card>
+                <Card className="shadow-lg">
                   <CardContent className="p-6 space-y-6">
                     <div className="flex items-center gap-3">
-                      <User className="w-5 h-5 text-brand-primary" />
-                      <h3 className="text-lg font-semibold">Informasi Pelanggan</h3>
+                      <div className="w-10 h-10 rounded-lg bg-brand-primary/10 grid place-items-center">
+                        <User className="w-5 h-5 text-brand-primary" />
+                      </div>
+                      <h3 className="text-xl font-semibold">Informasi Pelanggan</h3>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,12 +258,14 @@ function CheckoutContent() {
                 </Card>
                 
                 {/* Additional Notes */}
-                <Card>
+                <Card className="shadow-lg">
                   <CardContent className="p-6 space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-3">
-                      <Package className="w-5 h-5 text-brand-primary" />
-                      Catatan Tambahan
-                    </h3>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-brand-secondary/10 grid place-items-center">
+                        <Package className="w-5 h-5 text-brand-secondary" />
+                      </div>
+                      <h3 className="text-xl font-semibold">Catatan Tambahan</h3>
+                    </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="notes">Catatan untuk Penjual (Opsional)</Label>
@@ -282,12 +284,14 @@ function CheckoutContent() {
                 </Card>
                 
                 {/* Payment Method */}
-                <Card>
+                <Card className="shadow-lg">
                   <CardContent className="p-6 space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-3">
-                      <CreditCard className="w-5 h-5 text-brand-primary" />
-                      Metode Pembayaran
-                    </h3>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 grid place-items-center">
+                        <CreditCard className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <h3 className="text-xl font-semibold">Metode Pembayaran</h3>
+                    </div>
                     
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <div className="flex items-start gap-3">
@@ -305,7 +309,7 @@ function CheckoutContent() {
                 <Button
                   type="submit"
                   disabled={!isFormValid() || loading}
-                  className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 text-lg py-6"
+                  className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 text-lg py-6 shadow-lg"
                 >
                   {loading ? (
                     <>
@@ -321,7 +325,7 @@ function CheckoutContent() {
                 </Button>
                 
                 {!isFormValid() && (
-                  <div className="flex items-center gap-2 text-orange-600 text-sm">
+                  <div className="flex items-center gap-2 text-orange-600 text-sm bg-orange-50 p-3 rounded-lg">
                     <AlertCircle className="w-4 h-4" />
                     Harap lengkapi semua field yang wajib diisi
                   </div>
@@ -331,10 +335,10 @@ function CheckoutContent() {
             
             {/* Order Summary */}
             <div className="space-y-6">
-              <Card className="sticky top-24">
+              <Card className="sticky top-24 shadow-xl">
                 <CardContent className="p-6 space-y-6">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Package className="w-5 h-5" />
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <Package className="w-6 h-6 text-brand-primary" />
                     Ringkasan Pesanan
                   </h3>
                   
@@ -342,7 +346,7 @@ function CheckoutContent() {
                   <div className="space-y-4 max-h-64 overflow-y-auto">
                     {cart.map((item) => (
                       <div key={`${item.productId}-${item.variantId || 'no-variant'}`} className="flex gap-3 pb-3 border-b border-gray-100 last:border-0">
-                        <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                        <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center flex-shrink-0">
                           {item.productImage ? (
                             <img
                               src={item.productImage}
@@ -376,9 +380,9 @@ function CheckoutContent() {
                   
                   {/* Price Summary */}
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Subtotal ({getTotalItems()} item):</span>
-                      <span className="font-medium">Rp {getTotalPrice().toLocaleString("id-ID")}</span>
+                    <div className="flex justify-between text-base">
+                      <span className="text-gray-600">Subtotal ({getCartCount()} item):</span>
+                      <span className="font-semibold">Rp {getCartTotal().toLocaleString("id-ID")}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Biaya Admin:</span>
@@ -392,18 +396,45 @@ function CheckoutContent() {
                   
                   <Separator />
                   
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold">Total:</span>
-                    <span className="text-2xl font-bold text-brand-primary">
-                      Rp {getTotalPrice().toLocaleString("id-ID")}
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-xl font-bold">Total:</span>
+                    <span className="text-3xl font-bold text-brand-primary">
+                      Rp {getCartTotal().toLocaleString("id-ID")}
                     </span>
                   </div>
                   
                   {/* Security Badge */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-5 h-5 text-green-600" />
+                      <div className="text-sm">
+                        <p className="font-semibold text-green-800">Transaksi Aman & Terpercaya</p>
+                        <p className="text-green-700 text-xs">Data dilindungi SSL dan sistem keamanan berlapis</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Trust Indicators */}
+              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-0 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-800">Transaksi Aman & Terpercaya</span>
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">Garansi Uang Kembali</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">Support 24/7</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">Produk Original</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">Proses Cepat</span>
                     </div>
                   </div>
                 </CardContent>
