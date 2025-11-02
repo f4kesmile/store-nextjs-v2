@@ -4,7 +4,8 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+
+// Simple icons instead of lucide-react
 import {
   LayoutDashboard,
   Package,
@@ -20,7 +21,7 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react";
+} from "@/components/ui/simple-icons";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -89,44 +90,6 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-const sidebarVariants = {
-  open: {
-    width: 280,
-    transition: {
-      type: "spring",
-      stiffness: 400,
-      damping: 40,
-    },
-  },
-  closed: {
-    width: 80,
-    transition: {
-      type: "spring",
-      stiffness: 400,
-      damping: 40,
-    },
-  },
-};
-
-const menuItemVariants = {
-  open: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 24,
-    },
-  },
-  closed: {
-    opacity: 0,
-    x: -20,
-    transition: {
-      duration: 0.2,
-    },
-  },
-};
-
 export default function AdminLayout({
   children,
 }: {
@@ -160,20 +123,12 @@ export default function AdminLayout({
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"
-          />
+        <div className="text-center animate-in">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
           <p className="text-lg font-medium text-muted-foreground">
             Loading admin panel...
           </p>
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -199,48 +154,34 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex">
       {/* Mobile Overlay */}
-      <AnimatePresence>
-        {isMobile && sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          />
-        )}
-      </AnimatePresence>
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/50 z-40 md:hidden animate-in"
+        />
+      )}
 
       {/* Sidebar */}
-      <motion.aside
-        variants={sidebarVariants}
-        animate={sidebarOpen ? "open" : "closed"}
+      <aside
         className={cn(
           "bg-white border-r border-border/40 text-foreground transition-all duration-300 fixed h-full z-50 shadow-xl",
+          sidebarOpen ? "w-72" : "w-20",
           isMobile && "md:relative"
         )}
       >
         {/* Sidebar Header */}
         <div className="p-6 border-b border-border/40">
           <div className="flex items-center justify-between">
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.div
-                  variants={menuItemVariants}
-                  initial="closed"
-                  animate="open"
-                  exit="closed"
-                  className="flex items-center gap-3"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center">
-                    <LayoutDashboard className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <h1 className="text-lg font-bold text-gradient">
-                    Admin Panel
-                  </h1>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {sidebarOpen && (
+              <div className="flex items-center gap-3 animate-in">
+                <div className="w-8 h-8 bg-gradient-to-r from-primary to-primary/80 rounded-lg flex items-center justify-center">
+                  <LayoutDashboard className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <h1 className="text-lg font-bold text-gradient">
+                  Admin Panel
+                </h1>
+              </div>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -261,12 +202,7 @@ export default function AdminLayout({
           {menuItems.map(
             (item, index) =>
               hasAccess(item) && (
-                <motion.div
-                  key={item.path}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
+                <div key={item.path}>
                   <Link href={item.path}>
                     <Button
                       variant={pathname === item.path ? "default" : "ghost"}
@@ -278,54 +214,37 @@ export default function AdminLayout({
                       )}
                     >
                       <item.icon className="w-5 h-5 flex-shrink-0" />
-                      <AnimatePresence>
-                        {sidebarOpen && (
-                          <motion.span
-                            variants={menuItemVariants}
-                            initial="closed"
-                            animate="open"
-                            exit="closed"
-                            className="font-medium truncate"
-                          >
-                            {item.name}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
+                      {sidebarOpen && (
+                        <span className="font-medium truncate animate-in">
+                          {item.name}
+                        </span>
+                      )}
                     </Button>
                   </Link>
-                </motion.div>
+                </div>
               )
           )}
         </nav>
 
         {/* User Section */}
         <div className="p-4 border-t border-border/40 space-y-3">
-          <AnimatePresence>
-            {sidebarOpen && (
-              <motion.div
-                variants={menuItemVariants}
-                initial="closed"
-                animate="open"
-                exit="closed"
-              >
-                <Card className="p-3 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                      <Users className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {session.user.name}
-                      </p>
-                      <Badge variant="secondary" className="text-xs">
-                        {session.user.role}
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {sidebarOpen && (
+            <Card className="p-3 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20 animate-in">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">
+                    {session.user.name}
+                  </p>
+                  <Badge variant="secondary" className="text-xs">
+                    {session.user.role}
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+          )}
 
           <Button
             variant="destructive"
@@ -333,41 +252,22 @@ export default function AdminLayout({
             className="w-full justify-start gap-3 h-12"
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.span
-                  variants={menuItemVariants}
-                  initial="closed"
-                  animate="open"
-                  exit="closed"
-                  className="font-medium"
-                >
-                  Logout
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {sidebarOpen && (
+              <span className="font-medium animate-in">Logout</span>
+            )}
           </Button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Main Content */}
-      <motion.main
-        animate={{
-          marginLeft: isMobile ? 0 : sidebarOpen ? 280 : 80,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 40,
-        }}
-        className="flex-1 flex flex-col min-h-screen"
+      <main
+        className={cn(
+          "flex-1 flex flex-col min-h-screen transition-all duration-300",
+          !isMobile && (sidebarOpen ? "ml-72" : "ml-20")
+        )}
       >
         {/* Top Bar */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-md border-b border-border/40 p-6 sticky top-0 z-30"
-        >
+        <header className="bg-white/80 backdrop-blur-md border-b border-border/40 p-6 sticky top-0 z-30 animate-in">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               {isMobile && (
@@ -404,18 +304,13 @@ export default function AdminLayout({
               </Button>
             </div>
           </div>
-        </motion.header>
+        </header>
 
         {/* Content Area */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex-1 p-6 space-y-6 animate-in"
-        >
+        <div className="flex-1 p-6 space-y-6 animate-in">
           {children}
-        </motion.div>
-      </motion.main>
+        </div>
+      </main>
     </div>
   );
 }
