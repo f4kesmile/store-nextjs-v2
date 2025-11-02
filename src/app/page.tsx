@@ -6,7 +6,7 @@ import { HeroSection } from "@/components/ui/hero-section";
 import { FeatureCard } from "@/components/ui/feature-card";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useSettings } from "@/contexts/SettingsContext";
 import {
   ShoppingBag,

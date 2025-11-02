@@ -19,13 +19,14 @@ export function FeatureCard({
   description,
   className,
   variant = "default",
-  action
+  action,
 }: FeatureCardProps) {
   return (
     <Card
       className={cn(
         "p-6",
-        variant === "gradient" && "bg-gradient-to-br from-primary/5 to-secondary/5",
+        variant === "gradient" &&
+          "bg-gradient-to-br from-primary/5 to-secondary/5",
         className
       )}
     >

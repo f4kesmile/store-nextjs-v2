@@ -8,7 +8,7 @@ import { FeatureCard } from "@/components/ui/feature-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useToast } from "@/components/ui/toast";
 import {
