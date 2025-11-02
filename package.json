@@ -8,6 +8,6 @@
     "start": "next start"
   },
   "dependencies": {
-    "jspdf": "^2.5.1"
+    "jspdf": "^3.0.3"
   }
 }
