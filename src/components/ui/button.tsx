@@ -5,7 +5,6 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-// Restore shadcn-compatible variants & sizes fully
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
@@ -42,31 +41,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
 
-    // Ensure svg icons have consistent sizing
-    const enhancedChildren = React.Children.map(children, (child) => {
-      if (React.isValidElement(child) && child.type === 'svg') {
-        return React.cloneElement(child, {
-          className: cn('w-4 h-4 flex-shrink-0', child.props.className)
-        });
-      }
-      return child;
-    });
-
     return (
       <Comp
-        className={cn(
-          buttonVariants({ variant, size, className }),
-          // Additional focus consistency with brand ring
-          "focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-        )}
+        className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
       >
-        {enhancedChildren || children}
+        {children}
       </Comp>
     );
   }
 );
 Button.displayName = "Button";
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };
