@@ -522,18 +522,18 @@ function ProductsContent() {
 
                 {!isOutOfStock() && (
                   <>
-                    {/* Quantity Selection */}
+                    {/* Quantity Selection - FIXED SPACING */}
                     <div className="space-y-4">
                       <Label className="text-sm sm:text-base font-medium">
                         Jumlah <span className="text-xs sm:text-sm text-gray-500">(Tersedia: {getAvailableStock()})</span>
                       </Label>
-                      <div className="flex items-center gap-4 justify-center">
+                      <div className="flex items-center justify-center gap-2">
                         <Button
                           variant="outline"
                           size="icon"
                           onClick={() => setQuantity(Math.max(1, quantity - 1))}
                           disabled={quantity <= 1}
-                          className="h-10 w-10 sm:h-12 sm:w-12"
+                          className="h-9 w-9 rounded-md"
                           type="button"
                         >
                           <Minus className="w-4 h-4" />
@@ -547,14 +547,14 @@ function ProductsContent() {
                             const val = parseInt(e.target.value) || 1;
                             setQuantity(Math.min(Math.max(1, val), getAvailableStock()));
                           }}
-                          className="w-20 sm:w-24 text-center text-lg font-bold h-10 sm:h-12"
+                          className="w-16 text-center text-lg font-bold h-9"
                         />
                         <Button
                           variant="outline"
                           size="icon"
                           onClick={() => setQuantity(Math.min(getAvailableStock(), quantity + 1))}
                           disabled={quantity >= getAvailableStock()}
-                          className="h-10 w-10 sm:h-12 sm:w-12"
+                          className="h-9 w-9 rounded-md"
                           type="button"
                         >
                           <Plus className="w-4 h-4" />
