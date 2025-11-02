@@ -1,8 +1,17 @@
-// src/app/providers.tsx
 "use client";
 
 import { SessionProvider } from "next-auth/react";
+import { SettingsProvider } from "@/contexts/SettingsContext";
+import { ToastProvider } from "@/components/ui/toast";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return (
+    <SessionProvider>
+      <SettingsProvider>
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </SettingsProvider>
+    </SessionProvider>
+  );
 }
