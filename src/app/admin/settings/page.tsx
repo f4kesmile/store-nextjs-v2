@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,18 @@ const Icons = { gear: (p:any)=>(<svg viewBox="0 0 24 24" fill="none" stroke="cur
 
 export default function SettingsPage(){
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({ storeName: "", supportEmail: "", supportWhatsApp: "", locale: "id" });
+  const [formData, setFormData] = useState({
+    storeName: "",
+    supportEmail: "",
+    supportWhatsApp: "",
+    locale: "id",
+    // New brand & theme fields
+    logoUrl: "",
+    faviconUrl: "",
+    primaryColor: "#2563EB",
+    secondaryColor: "#10B981",
+    theme: "light" as "light" | "dark",
+  });
 
   async function submit(e: React.FormEvent){
     e.preventDefault(); setSaving(true);
@@ -26,7 +37,7 @@ export default function SettingsPage(){
             <span className="size-8 rounded-md bg-muted grid place-items-center"><Icons.gear className="w-4 h-4"/></span>
             <div>
               <CardTitle className="text-lg">Settings</CardTitle>
-              <CardDescription>Konfigurasi dasar toko</CardDescription>
+              <CardDescription>Konfigurasi dasar toko + Brand & Tema</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -42,6 +53,7 @@ export default function SettingsPage(){
             <Button disabled={saving}>{saving?"Menyimpan...":"Simpan"}</Button>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base">Preferensi</CardTitle><CardDescription>Bahasa/Locale</CardDescription></CardHeader>
           <CardContent className="space-y-3">
@@ -50,6 +62,48 @@ export default function SettingsPage(){
               <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
             </Select>
             <Button variant="outline" disabled={saving}>{saving?"Menyimpan...":"Simpan Preferensi"}</Button>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-2"><CardTitle className="text-base">Brand & Tema</CardTitle><CardDescription>Logo, favicon, warna, dan tema</CardDescription></CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Input placeholder="Logo URL" value={formData.logoUrl} onChange={(e)=>setFormData({...formData, logoUrl: e.target.value})}/>
+              <Input placeholder="Favicon URL" value={formData.faviconUrl} onChange={(e)=>setFormData({...formData, faviconUrl: e.target.value})}/>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Primary</label>
+                  <Input type="color" value={formData.primaryColor} onChange={(e)=>setFormData({...formData, primaryColor: e.target.value})}/>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">Secondary</label>
+                  <Input type="color" value={formData.secondaryColor} onChange={(e)=>setFormData({...formData, secondaryColor: e.target.value})}/>
+                </div>
+              </div>
+              <Select value={formData.theme} onValueChange={(v)=>setFormData({...formData, theme: v as "light" | "dark"})}>
+                <SelectTrigger><SelectValue placeholder="Tema default"/></SelectTrigger>
+                <SelectContent><SelectItem value="light">Light</SelectItem><SelectItem value="dark">Dark</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">Preview</div>
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded bg-muted overflow-hidden grid place-items-center">
+                    {formData.logoUrl ? (<img src={formData.logoUrl} alt="logo" className="max-h-10"/>) : (<div className="text-xs text-muted-foreground">Logo</div>)}
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="size-6 rounded" style={{ background: formData.primaryColor }} />
+                    <span className="size-6 rounded" style={{ background: formData.secondaryColor }} />
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">Tema: {formData.theme}</div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={saving} className="flex-1">{saving?"Menyimpan...":"Simpan Brand & Tema"}</Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </form>
