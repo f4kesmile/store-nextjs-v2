@@ -1,252 +1,280 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { SiteNavbar } from "@/components/site-navbar";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { HeroSection } from "@/components/ui/hero-section";
+import { FeatureCard } from "@/components/ui/feature-card";
+import { SectionHeader } from "@/components/ui/section-header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useSettings } from "@/contexts/SettingsContext";
-import { Loader2 } from "lucide-react";
-
-// Loading skeleton component
-function LoadingSkeleton() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      <div className="h-16 bg-white border-b animate-pulse" />
-      
-      {/* Hero Section Skeleton */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <div className="h-16 bg-gray-200 rounded-lg mx-auto mb-6 max-w-4xl animate-pulse" />
-        <div className="h-6 bg-gray-200 rounded mx-auto mb-4 max-w-2xl animate-pulse" />
-        <div className="h-6 bg-gray-200 rounded mx-auto mb-8 max-w-xl animate-pulse" />
-        <div className="flex justify-center gap-4">
-          <div className="h-14 w-40 bg-gray-200 rounded-lg animate-pulse" />
-          <div className="h-14 w-40 bg-gray-200 rounded-lg animate-pulse" />
-        </div>
-      </section>
-      
-      {/* Features Section Skeleton */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-8">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-xl shadow-lg p-8 animate-pulse">
-              <div className="h-12 w-12 bg-gray-200 rounded-full mx-auto mb-4" />
-              <div className="h-6 bg-gray-200 rounded mb-3" />
-              <div className="h-4 bg-gray-200 rounded" />
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-// Store header component with logo
-function StoreHeader() {
-  const { settings, loading } = useSettings();
-  
-  if (loading) {
-    return (
-      <div className="flex items-center gap-3 animate-pulse">
-        <div className="w-10 h-10 bg-gray-200 rounded" />
-        <div className="h-6 w-32 bg-gray-200 rounded" />
-      </div>
-    );
-  }
-  
-  return (
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded bg-muted overflow-hidden grid place-items-center border">
-        {settings.logoUrl ? (
-          <img src={settings.logoUrl} alt="logo" className="max-h-10 object-contain" />
-        ) : (
-          <div className="text-xs text-muted-foreground font-bold">
-            {settings.storeName?.charAt(0) || "S"}
-          </div>
-        )}
-      </div>
-      <div className="text-lg font-semibold">{settings.storeName || "Store Saya"}</div>
-    </div>
-  );
-}
+import { 
+  ShoppingBag, 
+  Shield, 
+  Zap, 
+  Heart, 
+  Star, 
+  Users, 
+  Phone, 
+  Mail, 
+  ArrowRight,
+  Sparkles,
+  Crown,
+  Gift
+} from "lucide-react";
 
 export default function HomePage() {
-  const { settings, loading } = useSettings();
-
-  if (loading) {
-    return <LoadingSkeleton />;
-  }
+  const { settings } = useSettings();
 
   return (
-    <div 
-      className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50"
-      style={{
-        background: `linear-gradient(to bottom right, color-mix(in srgb, ${settings.primaryColor} 5%, #faf5ff), color-mix(in srgb, ${settings.secondaryColor} 5%, #eff6ff))`
-      }}
-    >
-      <SiteNavbar />
-
+    <PageLayout>
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <div className="mb-8">
-          <StoreHeader />
-        </div>
-        <h1 className="text-6xl font-bold mb-6 text-gray-800">
-          Selamat Datang di{" "}
-          <span 
-            className="text-purple-600"
-            style={{ color: settings.primaryColor }}
-          >
-            {settings?.storeName || "Store Saya"}
-          </span>
-        </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          {settings?.storeDescription ||
-            "Platform digital terpercaya untuk semua kebutuhan produk premium dan layanan sosial media."}
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link
-            href="/products"
-            className="px-8 py-4 rounded-lg text-lg hover:opacity-90 font-bold transition-all text-white"
-            style={{ 
-              backgroundColor: settings.primaryColor,
-              boxShadow: `0 4px 14px 0 ${settings.primaryColor}33`
-            }}
-          >
-            🛍️ Belanja Sekarang
-          </Link>
-          <Link
-            href="/contact"
-            className="bg-white px-8 py-4 rounded-lg text-lg hover:bg-opacity-90 font-bold transition-all border-2"
-            style={{ 
-              color: settings.primaryColor,
-              borderColor: settings.primaryColor
-            }}
-          >
-            📞 Hubungi Kami
-          </Link>
-        </div>
-      </section>
+      <HeroSection
+        subtitle="Premium Digital Store"
+        title={`Welcome to ${settings.storeName}`}
+        description={settings.storeDescription || "Platform digital terpercaya untuk semua kebutuhan produk premium dan layanan terbaik."}
+        actions={
+          <>
+            <Button 
+              size="lg" 
+              className="px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90"
+              asChild
+            >
+              <Link href="/products">
+                <ShoppingBag className="w-5 h-5 mr-2" />
+                Belanja Sekarang
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="px-8 py-4 text-lg font-semibold border-2 hover:bg-white/90 backdrop-blur-sm"
+              asChild
+            >
+              <Link href="/contact">
+                <Phone className="w-5 h-5 mr-2" />
+                Hubungi Kami
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center hover:shadow-2xl transition-all group">
-            <div 
-              className="text-5xl mb-4 p-4 rounded-full w-20 h-20 mx-auto flex items-center justify-center"
-              style={{ backgroundColor: `${settings.primaryColor}15` }}
-            >
-              🚀
-            </div>
-            <h3 className="text-2xl font-bold mb-3 text-gray-800">
-              Cepat & Aman
-            </h3>
-            <p className="text-gray-600">
-              Transaksi cepat dengan sistem keamanan terpercaya
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center hover:shadow-2xl transition-all group">
-            <div 
-              className="text-5xl mb-4 p-4 rounded-full w-20 h-20 mx-auto flex items-center justify-center"
-              style={{ backgroundColor: `${settings.secondaryColor}15` }}
-            >
-              💎
-            </div>
-            <h3 className="text-2xl font-bold mb-3 text-gray-800">
-              Produk Premium
-            </h3>
-            <p className="text-gray-600">
-              Koleksi produk digital berkualitas tinggi
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center hover:shadow-2xl transition-all group">
-            <div 
-              className="text-5xl mb-4 p-4 rounded-full w-20 h-20 mx-auto flex items-center justify-center"
-              style={{ backgroundColor: `${settings.primaryColor}15` }}
-            >
-              🤝
-            </div>
-            <h3 className="text-2xl font-bold mb-3 text-gray-800">
-              Support 24/7
-            </h3>
-            <p className="text-gray-600">
-              Tim support siap membantu kapan saja
-            </p>
+      <section className="py-20 px-4">
+        <div className="container">
+          <SectionHeader
+            title="Mengapa Memilih Kami?"
+            description="Komitmen kami untuk memberikan pengalaman terbaik dalam setiap transaksi"
+            icon={<Crown className="w-6 h-6" />}
+            centered
+            className="mb-16"
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <FeatureCard
+              icon={<Zap className="text-brand-primary" />}
+              title="Cepat & Aman"
+              description="Transaksi instan dengan sistem keamanan berlapis untuk melindungi data Anda"
+              variant="gradient"
+            />
+            <FeatureCard
+              icon={<Sparkles className="text-brand-secondary" />}
+              title="Produk Premium"
+              description="Koleksi eksklusif produk digital berkualitas tinggi yang telah terpercaya"
+              variant="gradient"
+            />
+            <FeatureCard
+              icon={<Heart className="text-red-500" />}
+              title="Support 24/7"
+              description="Tim customer service profesional siap membantu Anda kapan saja dibutuhkan"
+              variant="gradient"
+            />
           </div>
         </div>
       </section>
 
-      {/* About Section - Menggunakan data dari settings */}
-      {settings?.aboutTitle && settings?.aboutDescription && (
-        <section className="container mx-auto px-4 py-16">
-          <div 
-            className="text-white rounded-xl shadow-2xl p-8 md:p-12 text-center"
-            style={{
-              background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`
-            }}
-          >
-            <h2 className="text-4xl font-bold mb-6">{settings.aboutTitle}</h2>
-            <p className="text-white/90 text-lg leading-relaxed max-w-4xl mx-auto whitespace-pre-line">
-              {settings.aboutDescription}
-            </p>
-
-            {/* Quick Contact */}
-            <div className="flex justify-center gap-4 mt-8">
-              {settings.supportWhatsApp && (
-                <a
-                  href={`https://wa.me/${settings.supportWhatsApp.replace(/[^0-9]/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 font-bold transition-all"
-                >
-                  💬 Chat WhatsApp
-                </a>
-              )}
-              {settings.supportEmail && (
-                <a
-                  href={`mailto:${settings.supportEmail}`}
-                  className="bg-white/20 backdrop-blur text-white px-8 py-3 rounded-lg hover:bg-white/30 font-bold transition-all border border-white/30"
-                >
-                  📧 Kirim Email
-                </a>
-              )}
+      {/* Stats Section */}
+      <section className="py-16 px-4 bg-gradient-to-r from-gray-50 to-gray-100">
+        <div className="container">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div className="space-y-2">
+              <div className="text-4xl font-bold text-brand-primary">10K+</div>
+              <div className="text-gray-600 font-medium">Happy Customers</div>
             </div>
+            <div className="space-y-2">
+              <div className="text-4xl font-bold text-brand-secondary">500+</div>
+              <div className="text-gray-600 font-medium">Products</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-4xl font-bold text-brand-primary">99.9%</div>
+              <div className="text-gray-600 font-medium">Uptime</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-4xl font-bold text-brand-secondary">24/7</div>
+              <div className="text-gray-600 font-medium">Support</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section with CTA */}
+      {settings?.aboutTitle && settings?.aboutDescription && (
+        <section className="py-20 px-4">
+          <div className="container">
+            <Card className="relative overflow-hidden border-0 shadow-2xl">
+              <div 
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.secondaryColor})`
+                }}
+              />
+              <div className="absolute inset-0 bg-black/20" />
+              
+              <CardContent className="relative z-10 py-16 px-8 text-center text-white">
+                <div className="max-w-4xl mx-auto space-y-8">
+                  <div className="space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm text-sm font-medium">
+                      <Gift className="w-4 h-4" />
+                      About Us
+                    </div>
+                    <h2 className="text-4xl md:text-5xl font-bold">{settings.aboutTitle}</h2>
+                    <p className="text-xl text-white/90 leading-relaxed whitespace-pre-line">
+                      {settings.aboutDescription}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    {settings.supportWhatsApp && (
+                      <Button
+                        size="lg"
+                        className="bg-green-600 hover:bg-green-700 border-0 shadow-lg"
+                        asChild
+                      >
+                        <a
+                          href={`https://wa.me/${settings.supportWhatsApp.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Phone className="w-5 h-5 mr-2" />
+                          Chat WhatsApp
+                        </a>
+                      </Button>
+                    )}
+                    {settings.supportEmail && (
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm"
+                        asChild
+                      >
+                        <a href={`mailto:${settings.supportEmail}`}>
+                          <Mail className="w-5 h-5 mr-2" />
+                          Kirim Email
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="bg-gray-800 text-white py-8">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex justify-center mb-4">
-            <StoreHeader />
-          </div>
-          <h3 className="text-2xl font-bold mb-2">
-            {settings?.storeName || "Store Saya"}
-          </h3>
-          <p className="text-gray-400 mb-4">{settings?.storeDescription}</p>
-          <div className="flex justify-center items-center gap-4 text-sm text-gray-400 flex-wrap">
-            {settings?.storeLocation && (
-              <>
-                <span>📍 {settings.storeLocation}</span>
-                <span className="hidden sm:inline">•</span>
-              </>
-            )}
-            {settings?.supportEmail && (
-              <>
-                <span>📧 {settings.supportEmail}</span>
-                <span className="hidden sm:inline">•</span>
-              </>
-            )}
-            {settings?.supportWhatsApp && (
-              <span>💬 {settings.supportWhatsApp}</span>
-            )}
-          </div>
-          <div className="mt-4 pt-4 border-t border-gray-700 text-xs text-gray-500">
-            © 2025 {settings?.storeName || "Store Saya"}. All rights reserved.
+      {/* Testimonials Section */}
+      <section className="py-20 px-4 bg-gray-50">
+        <div className="container">
+          <SectionHeader
+            title="Apa Kata Mereka?"
+            description="Pengalaman nyata dari customers yang telah mempercayai layanan kami"
+            icon={<Users className="w-6 h-6" />}
+            centered
+            className="mb-16"
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Sarah Johnson",
+                role: "Digital Marketer",
+                content: "Pelayanan yang sangat memuaskan! Produk berkualitas tinggi dan support yang responsif.",
+                rating: 5
+              },
+              {
+                name: "Ahmad Rizki",
+                role: "Business Owner", 
+                content: "Sudah bertahun-tahun menggunakan layanan ini. Selalu konsisten dengan kualitas terbaiknya.",
+                rating: 5
+              },
+              {
+                name: "Lisa Wong",
+                role: "Content Creator",
+                content: "Proses yang mudah dan cepat. Sangat direkomendasikan untuk kebutuhan digital!",
+                rating: 5
+              }
+            ].map((testimonial, index) => (
+              <Card key={index} className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow duration-300">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex gap-1">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <p className="text-gray-600 leading-relaxed italic">
+                    "{testimonial.content}"
+                  </p>
+                  <div className="pt-4 border-t">
+                    <div className="font-semibold text-gray-900">{testimonial.name}</div>
+                    <div className="text-sm text-gray-500">{testimonial.role}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
-      </footer>
-    </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 px-4">
+        <div className="container">
+          <div className="text-center space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+                Siap Memulai?
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Bergabunglah dengan ribuan customer yang telah mempercayai layanan kami
+              </p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                className="px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-brand-primary to-brand-secondary"
+                asChild
+              >
+                <Link href="/products">
+                  <ShoppingBag className="w-5 h-5 mr-2" />
+                  Mulai Belanja
+                </Link>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="px-8 py-4 text-lg font-semibold border-2"
+                asChild
+              >
+                <Link href="/contact">
+                  <Phone className="w-5 h-5 mr-2" />
+                  Konsultasi Gratis
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </PageLayout>
   );
 }
