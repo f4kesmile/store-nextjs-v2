@@ -1,23 +1,22 @@
-// src/app/admin/transactions/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import TransactionExportButton from "@/components/TransactionExportButton"; // Tambahkan import ini
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatDate, formatPrice } from "@/lib/utils";
 
 interface Transaction {
   id: number;
   productId: number;
-  product: {
-    name: string;
-  };
-  variant?: {
-    name: string;
-    value: string;
-  };
-  reseller?: {
-    name: string;
-  };
+  product: { name: string };
+  variant?: { name: string; value: string };
+  reseller?: { name: string };
   customerName: string | null;
   customerPhone: string | null;
   quantity: number;
@@ -27,521 +26,196 @@ interface Transaction {
   createdAt: string;
 }
 
+const Icons = {
+  download: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M19 21H5"/></svg>),
+  search: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>),
+  edit: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>),
+  trash: (p: any) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...p}><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>),
+};
+
 export default function TransactionsPage() {
   const { data: session } = useSession();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Toolbar
   const [filter, setFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [editingTransaction, setEditingTransaction] =
-    useState<Transaction | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({
-    status: "",
-    notes: "",
-    customerName: "",
-    customerPhone: "",
-  });
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [statusFilter]);
+  // Modal edit
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ status: "", notes: "", customerName: "", customerPhone: "" });
+
+  useEffect(() => { fetchTransactions(); }, [statusFilter]);
 
   const fetchTransactions = async () => {
     try {
       let url = "/api/transactions";
-      if (statusFilter !== "ALL") {
-        url += `?status=${statusFilter}`;
-      }
+      if (statusFilter !== "ALL") url += `?status=${statusFilter}`;
       const res = await fetch(url);
       const data = await res.json();
       setTransactions(data);
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  const handleEdit = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
-    setFormData({
-      status: transaction.status,
-      notes: transaction.notes || "",
-      customerName: transaction.customerName || "",
-      customerPhone: transaction.customerPhone || "",
-    });
-    setShowModal(true);
-  };
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTransaction) return;
-
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/transactions/${editingTransaction.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        await fetchTransactions();
-        setShowModal(false);
-        setEditingTransaction(null);
-        alert("✅ Transaksi berhasil diupdate!");
-      } else {
-        alert("❌ Gagal update transaksi");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("❌ Gagal update transaksi");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return;
-
-    try {
-      const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        await fetchTransactions();
-        alert("✅ Transaksi berhasil dihapus!");
-      } else {
-        alert("❌ Gagal menghapus transaksi");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("❌ Gagal menghapus transaksi");
-    }
-  };
-
-  // HAPUS function handleExport yang lama - tidak dipakai lagi
-
-  const filteredTransactions = transactions.filter(
-    (t) =>
+  const filtered = useMemo(() => {
+    return transactions.filter((t) =>
       t.product.name.toLowerCase().includes(filter.toLowerCase()) ||
       t.customerName?.toLowerCase().includes(filter.toLowerCase()) ||
-      t.id.toString().includes(filter)
-  );
+      String(t.id).includes(filter)
+    );
+  }, [transactions, filter]);
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      PENDING: "bg-yellow-100 text-yellow-700",
-      CONFIRMED: "bg-blue-100 text-blue-700",
-      SHIPPED: "bg-purple-100 text-purple-700",
-      COMPLETED: "bg-green-100 text-green-700",
-      CANCELLED: "bg-red-100 text-red-700",
-    };
-    return styles[status as keyof typeof styles] || "bg-gray-100 text-gray-700";
-  };
-
-  const calculateStats = () => {
+  const stats = useMemo(() => {
     const total = transactions.length;
-    const totalRevenue = transactions
-      .filter((t) => t.status !== "CANCELLED")
-      .reduce((sum, t) => sum + parseFloat(t.totalPrice.toString()), 0);
+    const totalRevenue = transactions.filter((t) => t.status !== "CANCELLED").reduce((s, t) => s + Number(t.totalPrice), 0);
     const pending = transactions.filter((t) => t.status === "PENDING").length;
-    const completed = transactions.filter(
-      (t) => t.status === "COMPLETED"
-    ).length;
-
+    const completed = transactions.filter((t) => t.status === "COMPLETED").length;
     return { total, totalRevenue, pending, completed };
-  };
+  }, [transactions]);
 
-  const stats = calculateStats();
+  const openEdit = (t: Transaction) => { setEditingTransaction(t); setFormData({ status: t.status, notes: t.notes || "", customerName: t.customerName || "", customerPhone: t.customerPhone || "" }); setShowModal(true); };
+  const handleDelete = async (id: number) => { if (!confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return; try { const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" }); if (res.ok) { await fetchTransactions(); alert("✅ Transaksi berhasil dihapus!"); } else { alert("❌ Gagal menghapus transaksi"); } } catch (e) { console.error(e); alert("❌ Gagal menghapus transaksi"); } };
+  const handleUpdate = async (e: React.FormEvent) => { e.preventDefault(); if (!editingTransaction) return; setLoading(true); try { const res = await fetch(`/api/transactions/${editingTransaction.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) }); if (res.ok) { await fetchTransactions(); setShowModal(false); setEditingTransaction(null); } else { alert("❌ Gagal update transaksi"); } } catch (e) { console.error(e); alert("❌ Gagal update transaksi"); } finally { setLoading(false); } };
+
+  const badgeVariant = (status: string) => {
+    if (status === "PENDING") return "warning" as const;
+    if (status === "CONFIRMED" || status === "SHIPPED") return "secondary" as const;
+    if (status === "COMPLETED") return "success" as const;
+    if (status === "CANCELLED") return "destructive" as const;
+    return "secondary" as const;
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header dengan tombol export yang baru */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">
-            Manajemen Transaksi
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Kelola semua transaksi penjualan dengan filter dan export canggih
-          </p>
-        </div>
-        {/* Ganti button export lama dengan TransactionExportButton */}
-        <TransactionExportButton />
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl">Manajemen Transaksi</CardTitle>
+              <CardDescription>Kelola transaksi dengan filter dan ekspor</CardDescription>
+            </div>
+            <Button className="gap-2" onClick={() => window.location.assign("/api/transactions?export=excel")}> <Icons.download className="w-4 h-4"/> Export</Button>
+          </div>
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="relative">
+              <Input placeholder="Cari order ID, produk, atau customer..." value={filter} onChange={(e) => setFilter(e.target.value)} className="pl-9"/>
+              <Icons.search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"/>
+            </div>
+            <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+              <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter status"/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Semua</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                <SelectItem value="SHIPPED">Shipped</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card><CardHeader className="pb-2"><CardDescription>Total</CardDescription><CardTitle className="text-2xl">{stats.total}</CardTitle></CardHeader></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Revenue</CardDescription><CardTitle className="text-2xl">{formatPrice(stats.totalRevenue)}</CardTitle></CardHeader></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Pending</CardDescription><CardTitle className="text-2xl">{stats.pending}</CardTitle></CardHeader></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Completed</CardDescription><CardTitle className="text-2xl">{stats.completed}</CardTitle></CardHeader></Card>
       </div>
 
-      {/* Stats Cards - Enhanced */}
-      <div className="grid md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-6 border border-blue-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-blue-600 mb-1 font-medium">
-                Total Transaksi
-              </div>
-              <div className="text-3xl font-bold text-blue-800">
-                {stats.total}
-              </div>
-            </div>
-            <div className="text-3xl text-blue-500">📊</div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg p-6 border border-green-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-green-600 mb-1 font-medium">
-                Total Revenue
-              </div>
-              <div className="text-2xl font-bold text-green-800">
-                Rp {stats.totalRevenue.toLocaleString("id-ID")}
-              </div>
-            </div>
-            <div className="text-3xl text-green-500">💰</div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-lg p-6 border border-yellow-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-yellow-600 mb-1 font-medium">
-                Pending
-              </div>
-              <div className="text-3xl font-bold text-yellow-800">
-                {stats.pending}
-              </div>
-            </div>
-            <div className="text-3xl text-yellow-500">⏳</div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-lg p-6 border border-purple-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-purple-600 mb-1 font-medium">
-                Completed
-              </div>
-              <div className="text-3xl font-bold text-purple-800">
-                {stats.completed}
-              </div>
-            </div>
-            <div className="text-3xl text-purple-500">✅</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters - Enhanced */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          🔍 Filter & Pencarian
-        </h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cari Transaksi
-            </label>
-            <input
-              type="text"
-              placeholder="🔍 Cari order ID, produk, atau customer..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filter Status
-            </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="ALL">📋 Semua Status</option>
-              <option value="PENDING">⏳ Pending</option>
-              <option value="CONFIRMED">🔄 Confirmed</option>
-              <option value="SHIPPED">🚚 Shipped</option>
-              <option value="COMPLETED">✅ Completed</option>
-              <option value="CANCELLED">❌ Cancelled</option>
-            </select>
-          </div>
-        </div>
-
-        {(filter || statusFilter !== "ALL") && (
-          <div className="mt-4 flex items-center gap-2">
-            <span className="text-sm text-gray-600">
-              Menampilkan {filteredTransactions.length} dari{" "}
-              {transactions.length} transaksi
-            </span>
-            {filter && (
-              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                Pencarian: "{filter}"
-              </span>
-            )}
-            {statusFilter !== "ALL" && (
-              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">
-                Status: {statusFilter}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Transactions Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Memuat transaksi...</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Order ID
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Tanggal & Waktu
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Produk
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Customer
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Reseller
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Qty
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Total
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredTransactions.map((transaction) => (
-                  <tr
-                    key={transaction.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <span className="font-mono font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">
-                        #{transaction.id}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-800">
-                        {new Date(transaction.createdAt).toLocaleDateString(
-                          "id-ID",
-                          {
-                            weekday: "short",
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          }
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(transaction.createdAt).toLocaleTimeString(
-                          "id-ID",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: false,
-                          }
-                        )}{" "}
-                        WIB
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">
-                        {transaction.product.name}
-                      </div>
-                      {transaction.variant && (
-                        <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded mt-1 inline-block">
-                          {transaction.variant.name}:{" "}
-                          {transaction.variant.value}
+      <Card>
+        <CardContent>
+          {loading ? (
+            <div className="p-8 text-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div><p className="text-muted-foreground">Memuat transaksi...</p></div>
+          ) : (
+            <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Produk</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Reseller</TableHead>
+                    <TableHead>Qty</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell><span className="font-mono font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">#{t.id}</span></TableCell>
+                      <TableCell>
+                        <div className="text-sm font-medium">{formatDate(t.createdAt)}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{t.product?.name}</div>
+                        {t.variant && (<div className="text-xs text-muted-foreground">{t.variant.name}: {t.variant.value}</div>)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{t.customerName || "-"}</div>
+                        <div className="text-xs text-muted-foreground">{t.customerPhone || "-"}</div>
+                      </TableCell>
+                      <TableCell><Badge variant={t.reseller ? "secondary" : "outline"}>{t.reseller?.name || "Direct"}</Badge></TableCell>
+                      <TableCell className="font-medium">{t.quantity}</TableCell>
+                      <TableCell className="font-semibold text-emerald-600">{formatPrice(Number(t.totalPrice))}</TableCell>
+                      <TableCell><Badge variant={badgeVariant(t.status)}>{t.status}</Badge></TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button variant="outline" className="gap-2" onClick={() => openEdit(t)}><Icons.edit className="w-4 h-4"/>Edit</Button>
+                          <Button variant="destructive" className="gap-2" onClick={() => handleDelete(t.id)}><Icons.trash className="w-4 h-4"/>Hapus</Button>
                         </div>
-                      )}
-                    </td>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {transaction.customerName || "-"}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {transaction.customerPhone || "-"}
-                      </div>
-                    </td>
+          {!loading && filtered.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">Tidak ada transaksi sesuai filter</div>
+          )}
+        </CardContent>
+      </Card>
 
-                    <td className="px-6 py-4 text-sm">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          transaction.reseller
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {transaction.reseller?.name || "Direct"}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 font-semibold">
-                      {transaction.quantity}
-                    </td>
-
-                    <td className="px-6 py-4 font-bold text-green-600">
-                      Rp{" "}
-                      {parseFloat(
-                        transaction.totalPrice.toString()
-                      ).toLocaleString("id-ID")}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(
-                          transaction.status
-                        )}`}
-                      >
-                        {transaction.status}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(transaction)}
-                          className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm transition-colors"
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(transaction.id)}
-                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm transition-colors"
-                        >
-                          🗑️ Hapus
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {filteredTransactions.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📭</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-              Tidak ada transaksi ditemukan
-            </h3>
-            <p className="text-gray-600">
-              {filter || statusFilter !== "ALL"
-                ? "Coba ubah filter pencarian Anda"
-                : "Belum ada transaksi yang masuk"}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Edit Modal - tetap sama */}
       {showModal && editingTransaction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              ✏️ Edit Transaksi #{editingTransaction.id}
-            </h2>
-
+            <h2 className="text-2xl font-bold mb-6">Edit Transaksi #{editingTransaction.id}</h2>
             <form onSubmit={handleUpdate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Nama Customer
-                </label>
-                <input
-                  type="text"
-                  value={formData.customerName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, customerName: e.target.value })
-                  }
-                  className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <label className="block text-sm font-medium mb-2">Nama Customer</label>
+                <Input type="text" value={formData.customerName} onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}/>
               </div>
-
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  No. Telepon
-                </label>
-                <input
-                  type="text"
-                  value={formData.customerPhone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, customerPhone: e.target.value })
-                  }
-                  className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <label className="block text-sm font-medium mb-2">No. Telepon</label>
+                <Input type="text" value={formData.customerPhone} onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}/>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-2">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                  className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="PENDING">⏳ Pending</option>
-                  <option value="CONFIRMED">🔄 Confirmed</option>
-                  <option value="SHIPPED">🚚 Shipped</option>
-                  <option value="COMPLETED">✅ Completed</option>
-                  <option value="CANCELLED">❌ Cancelled</option>
-                </select>
+                <Select value={formData.status} onValueChange={(v: any) => setFormData({ ...formData, status: v })}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Pilih status"/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                    <SelectItem value="SHIPPED">Shipped</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Catatan
-                </label>
-                <textarea
-                  rows={3}
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                  className="w-full border rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Tambahkan catatan untuk transaksi ini..."
-                />
+                <label className="block text-sm font-medium mb-2">Catatan</label>
+                <textarea rows={3} className="w-full border rounded-lg p-3" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Tambahkan catatan..."/>
               </div>
-
               <div className="flex gap-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-                >
-                  {loading ? "Saving..." : "💾 Update"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingTransaction(null);
-                  }}
-                  className="px-6 bg-gray-300 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  ❌ Batal
-                </button>
+                <Button type="submit" disabled={loading} className="flex-1">{loading ? "Saving..." : "Simpan Perubahan"}</Button>
+                <Button type="button" variant="secondary" onClick={() => { setShowModal(false); setEditingTransaction(null); }}>Batal</Button>
               </div>
             </form>
           </div>
