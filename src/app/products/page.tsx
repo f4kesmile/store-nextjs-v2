@@ -1,10 +1,33 @@
-// src/app/products/page.tsx
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { HeroSection } from "@/components/ui/hero-section";
+import { SectionHeader } from "@/components/ui/section-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
+import { useSettings } from "@/contexts/SettingsContext";
+import { useToast } from "@/components/ui/toast";
+import { 
+  ShoppingCart, 
+  Package, 
+  Star, 
+  Filter,
+  Search,
+  Plus,
+  Minus,
+  X,
+  CheckCircle,
+  AlertCircle,
+  ShoppingBag,
+  Loader2
+} from "lucide-react";
 
 interface Variant {
   id: number;
@@ -32,20 +55,24 @@ interface Reseller {
   whatsappNumber: string;
 }
 
-// ✅ COMPONENT UTAMA DIBUNGKUS DI SINI
 function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const resellerRef = searchParams.get("ref");
-
+  const { settings } = useSettings();
+  const toast = useToast();
+  
   const { addToCart, getCartCount } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [reseller, setReseller] = useState<Reseller | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [notes, setNotes] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProducts();
@@ -54,10 +81,30 @@ function ProductsContent() {
     }
   }, [resellerRef]);
 
+  useEffect(() => {
+    const filtered = products.filter(product => 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProducts(filtered);
+  }, [products, searchTerm]);
+
   const fetchProducts = async () => {
-    const res = await fetch("/api/products");
-    const data = await res.json();
-    setProducts(data);
+    try {
+      setLoading(true);
+      const res = await fetch("/api/products");
+      const data = await res.json();
+      setProducts(data);
+      setFilteredProducts(data);
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Gagal memuat produk",
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchReseller = async (refId: string) => {
@@ -121,7 +168,12 @@ function ProductsContent() {
       enableNotes: selectedProduct.enableNotes,
     });
 
-    alert("✅ Produk ditambahkan ke keranjang!");
+    toast({ 
+      title: "✅ Ditambahkan ke keranjang!", 
+      description: `${selectedProduct.name} x${quantity}`,
+      variant: "success" 
+    });
+    
     setSelectedProduct(null);
     setQuantity(1);
     setSelectedVariant(null);
@@ -132,372 +184,443 @@ function ProductsContent() {
     router.push(resellerRef ? `/cart?ref=${resellerRef}` : "/cart");
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-purple-600">
-            Store Saya
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="text-gray-700 hover:text-purple-600">
-              Beranda
-            </Link>
-            <Link
-              href="/products"
-              className="text-gray-700 hover:text-purple-600 font-bold"
-            >
-              Produk
-            </Link>
-            <Link
-              href="/contact"
-              className="text-gray-700 hover:text-purple-600"
-            >
-              Kontak
-            </Link>
-
-            {/* Cart Icon */}
-            <button
-              onClick={goToCart}
-              className="relative p-2 hover:bg-gray-100 rounded-lg transition-all"
-            >
-              {getCartCount() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                  {getCartCount()}
-                </span>
-              )}
-              <span className="text-2xl">🛒</span>
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Reseller Banner */}
-      {reseller && (
-        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white py-4 shadow-lg">
-          <div className="container mx-auto px-4 text-center">
-            <p className="text-lg font-bold">
-              🎉 Anda membeli melalui reseller:{" "}
-              <span className="text-yellow-300">{reseller.name}</span>
-            </p>
-            <p className="text-sm opacity-90">
-              Pesanan Anda akan langsung diproses oleh reseller kami
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Products Grid */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800">Produk Kami</h1>
-
-          {getCartCount() > 0 && (
-            <button
-              onClick={goToCart}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-bold flex items-center gap-2"
-            >
-              🛒 Lihat Keranjang ({getCartCount()})
-            </button>
-          )}
-        </div>
-
-        <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => {
-            const hasStock =
-              product.stock > 0 || product.variants.some((v) => v.stock > 0);
-            const isActive = product.status === "ACTIVE";
-
-            return (
-              <div
-                key={product.id}
-                className={`bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 ${
-                  !hasStock || !isActive ? "opacity-60" : ""
-                }`}
-              >
-                <div
-                  className="relative h-48 bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center cursor-pointer"
-                  onClick={() =>
-                    hasStock && isActive && openProductModal(product)
-                  }
-                >
-                  {product.iconUrl ? (
-                    <img
-                      src={product.iconUrl}
-                      alt={product.name}
-                      className="h-32 w-32 object-contain"
-                    />
-                  ) : (
-                    <div className="text-6xl">📦</div>
-                  )}
-
-                  {(!hasStock || !isActive) && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                      <span className="text-white text-2xl font-bold transform -rotate-12">
-                        SOLD OUT
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4">
-                  <h3 className="text-xl font-bold mb-2 text-gray-800 line-clamp-1">
-                    {product.name}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                    {product.description}
-                  </p>
-
-                  {product.variants.length > 0 && (
-                    <div className="mb-3">
-                      <p className="text-xs text-gray-500 mb-1">
-                        {product.variants.length} varian tersedia
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {product.variants.slice(0, 3).map((variant) => (
-                          <span
-                            key={variant.id}
-                            className={`text-xs px-2 py-1 rounded ${
-                              variant.stock > 0
-                                ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-500 line-through"
-                            }`}
-                          >
-                            {variant.value}
-                          </span>
-                        ))}
-                        {product.variants.length > 3 && (
-                          <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
-                            +{product.variants.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-2xl font-bold text-purple-600">
-                      Rp {product.price.toLocaleString("id-ID")}
-                    </span>
-                    <span
-                      className={`text-sm ${
-                        hasStock ? "text-gray-500" : "text-red-500 font-bold"
-                      }`}
-                    >
-                      {hasStock ? `Stok: ${product.stock}` : "Habis"}
-                    </span>
-                  </div>
-
-                  {hasStock && isActive && (
-                    <button
-                      onClick={() => openProductModal(product)}
-                      className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-medium"
-                    >
-                      + Tambah ke Keranjang
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Product Modal */}
-      {selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">{selectedProduct.name}</h2>
-
-            {reseller && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                <p className="text-sm font-medium text-green-800">
-                  ✅ Pesanan via:{" "}
-                  <span className="font-bold">{reseller.name}</span>
-                </p>
-              </div>
-            )}
-
-            {/* Variant Selection */}
-            {selectedProduct.variants.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">
-                  Pilih Varian: <span className="text-red-500">*</span>
-                </label>
-                <div className="space-y-2">
-                  {selectedProduct.variants.map((variant) => (
-                    <label
-                      key={variant.id}
-                      className={`flex items-center justify-between p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedVariant?.id === variant.id
-                          ? "border-purple-600 bg-purple-50"
-                          : variant.stock > 0
-                          ? "border-gray-200 hover:border-purple-300"
-                          : "border-gray-200 opacity-50 cursor-not-allowed"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="variant"
-                          value={variant.id}
-                          checked={selectedVariant?.id === variant.id}
-                          onChange={() => handleVariantChange(variant.id)}
-                          disabled={variant.stock === 0}
-                          className="w-4 h-4"
-                        />
-                        <div>
-                          <p className="font-medium">
-                            {variant.name}: {variant.value}
-                          </p>
-                          <p
-                            className={`text-xs ${
-                              variant.stock > 0
-                                ? "text-gray-600"
-                                : "text-red-500"
-                            }`}
-                          >
-                            {variant.stock > 0
-                              ? `Stok: ${variant.stock}`
-                              : "Sold Out"}
-                          </p>
-                        </div>
-                      </div>
-                      {selectedVariant?.id === variant.id && (
-                        <span className="text-purple-600">✓</span>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {isOutOfStock() && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <p className="text-sm font-medium text-red-800">
-                  ⚠️ Stok tidak tersedia
-                </p>
-              </div>
-            )}
-
-            {!isOutOfStock() && (
-              <>
-                {/* Quantity */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Jumlah:{" "}
-                    <span className="text-xs text-gray-500">
-                      (Tersedia: {getAvailableStock()})
-                    </span>
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 bg-gray-200 rounded-lg hover:bg-gray-300 font-bold"
-                    >
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      max={getAvailableStock()}
-                      value={quantity}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value) || 1;
-                        setQuantity(
-                          Math.min(Math.max(1, val), getAvailableStock())
-                        );
-                      }}
-                      className="flex-1 border rounded-lg p-2 text-center font-bold text-lg"
-                    />
-                    <button
-                      onClick={() =>
-                        setQuantity(Math.min(getAvailableStock(), quantity + 1))
-                      }
-                      className="w-10 h-10 bg-gray-200 rounded-lg hover:bg-gray-300 font-bold"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-
-                {/* Notes Input */}
-                {selectedProduct.enableNotes && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-2">
-                      Catatan (Opsional)
-                    </label>
-                    <input
-                      type="text"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Contoh: warna merah, ukuran L, dll..."
-                      className="w-full border rounded-lg p-3"
-                    />
-                  </div>
-                )}
-
-                {/* Price Summary */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-lg">Total</span>
-                    <span className="font-bold text-xl text-purple-600">
-                      Rp{" "}
-                      {(
-                        Number(selectedProduct.price) * quantity
-                      ).toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddToCart}
-                disabled={!canAddToCart()}
-                className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {!canAddToCart()
-                  ? selectedProduct.variants.length > 0 && !selectedVariant
-                    ? "Pilih Varian Dulu"
-                    : "Stok Tidak Cukup"
-                  : "🛒 Tambah ke Keranjang"}
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedProduct(null);
-                  setSelectedVariant(null);
-                  setQuantity(1);
-                  setNotes("");
-                }}
-                className="px-4 bg-gray-300 rounded-lg hover:bg-gray-400"
-              >
-                Batal
-              </button>
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="container py-20">
+          <div className="flex items-center justify-center min-h-96">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-8 h-8 animate-spin brand-primary" />
+              <p className="text-lg font-semibold">Loading products...</p>
             </div>
           </div>
         </div>
+      </PageLayout>
+    );
+  }
+
+  return (
+    <PageLayout>
+      {/* Hero Section */}
+      <HeroSection
+        subtitle="Premium Collection"
+        title="Jelajahi Produk Kami"
+        description="Temukan berbagai produk digital berkualitas tinggi yang telah dipercaya ribuan customer"
+        variant="gradient"
+      />
+
+      {/* Reseller Banner */}
+      {reseller && (
+        <section className="py-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
+          <div className="container">
+            <div className="text-center space-y-2">
+              <p className="text-lg font-bold flex items-center justify-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Anda membeli melalui reseller: <span className="text-yellow-300">{reseller.name}</span>
+              </p>
+              <p className="text-sm opacity-90">
+                Pesanan Anda akan langsung diproses oleh reseller kami
+              </p>
+            </div>
+          </div>
+        </section>
       )}
-    </div>
+
+      {/* Search & Filter Section */}
+      <section className="py-8 px-4 bg-gray-50">
+        <div className="container">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  placeholder="Cari produk..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-12"
+                />
+              </div>
+            </div>
+            
+            {getCartCount() > 0 && (
+              <Button 
+                onClick={goToCart}
+                className="bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 shadow-lg"
+                size="lg"
+              >
+                <ShoppingCart className="w-5 h-5 mr-2" />
+                Keranjang ({getCartCount()})
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Products Grid */}
+      <section className="py-16 px-4">
+        <div className="container">
+          <SectionHeader
+            title="Katalog Produk"
+            description={`Menampilkan ${filteredProducts.length} produk dari ${products.length} total produk`}
+            icon={<Package className="w-6 h-6" />}
+            className="mb-12"
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {filteredProducts.map((product) => {
+              const hasStock = product.stock > 0 || product.variants.some((v) => v.stock > 0);
+              const isActive = product.status === "ACTIVE";
+              const canPurchase = hasStock && isActive;
+
+              return (
+                <Card key={product.id} className={`group overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 ${
+                  canPurchase ? "hover:-translate-y-2" : "opacity-60"
+                }`}>
+                  <div className="relative">
+                    {/* Product Image */}
+                    <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative overflow-hidden">
+                      {product.iconUrl ? (
+                        <img
+                          src={product.iconUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <Package className="w-20 h-20 text-gray-400" />
+                      )}
+                      
+                      {!canPurchase && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <div className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold transform -rotate-12">
+                            {!isActive ? "INACTIVE" : "SOLD OUT"}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {canPurchase && (
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            className="rounded-full shadow-lg"
+                            onClick={() => openProductModal(product)}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Stock Status Badge */}
+                    <div className="absolute top-4 left-4">
+                      <Badge variant={hasStock ? "default" : "destructive"} className="shadow-sm">
+                        {hasStock ? `Stok: ${product.stock}` : "Habis"}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <CardContent className="p-6 space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-2 group-hover:text-brand-primary transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 line-clamp-3">
+                        {product.description}
+                      </p>
+                    </div>
+                    
+                    {/* Variants Preview */}
+                    {product.variants.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500">
+                          {product.variants.length} varian tersedia
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {product.variants.slice(0, 3).map((variant) => (
+                            <Badge
+                              key={variant.id}
+                              variant={variant.stock > 0 ? "secondary" : "outline"}
+                              className={`text-xs ${
+                                variant.stock === 0 ? "line-through opacity-50" : ""
+                              }`}
+                            >
+                              {variant.value}
+                            </Badge>
+                          ))}
+                          {product.variants.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{product.variants.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Price */}
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-bold text-brand-primary">
+                        Rp {product.price.toLocaleString("id-ID")}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm text-gray-600">4.8</span>
+                      </div>
+                    </div>
+                    
+                    {/* Action Button */}
+                    <Button
+                      onClick={() => canPurchase && openProductModal(product)}
+                      disabled={!canPurchase}
+                      className="w-full"
+                      variant={canPurchase ? "default" : "secondary"}
+                    >
+                      {!canPurchase ? (
+                        <>
+                          <AlertCircle className="w-4 h-4 mr-2" />
+                          Tidak Tersedia
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag className="w-4 h-4 mr-2" />
+                          Tambah ke Keranjang
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-16">
+              <Package className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                {searchTerm ? "Produk tidak ditemukan" : "Belum ada produk"}
+              </h3>
+              <p className="text-gray-500">
+                {searchTerm 
+                  ? "Coba kata kunci yang berbeda" 
+                  : "Produk akan segera ditambahkan"}
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Product Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardContent className="p-0">
+              {/* Modal Header */}
+              <div className="relative">
+                <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  {selectedProduct.iconUrl ? (
+                    <img
+                      src={selectedProduct.iconUrl}
+                      alt={selectedProduct.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ) : (
+                    <Package className="w-24 h-24 text-gray-400" />
+                  )}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute top-4 right-4 rounded-full"
+                  onClick={() => setSelectedProduct(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.name}</h2>
+                  <p className="text-gray-600">{selectedProduct.description}</p>
+                  <div className="text-3xl font-bold text-brand-primary">
+                    Rp {selectedProduct.price.toLocaleString("id-ID")}
+                  </div>
+                </div>
+
+                {/* Reseller Info */}
+                {reseller && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="font-medium text-green-800">
+                        Pesanan via: <span className="font-bold">{reseller.name}</span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Variant Selection */}
+                {selectedProduct.variants.length > 0 && (
+                  <div className="space-y-4">
+                    <Label className="text-base font-medium">
+                      Pilih Varian <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="space-y-3">
+                      {selectedProduct.variants.map((variant) => (
+                        <div key={variant.id}>
+                          <label className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                            selectedVariant?.id === variant.id
+                              ? "border-brand-primary bg-brand-primary/5"
+                              : variant.stock > 0
+                              ? "border-gray-200 hover:border-brand-primary/50"
+                              : "border-gray-200 opacity-50 cursor-not-allowed"
+                          }`}>
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="radio"
+                                name="variant"
+                                value={variant.id}
+                                checked={selectedVariant?.id === variant.id}
+                                onChange={() => handleVariantChange(variant.id)}
+                                disabled={variant.stock === 0}
+                                className="w-4 h-4 text-brand-primary"
+                              />
+                              <div>
+                                <p className="font-medium">
+                                  {variant.name}: {variant.value}
+                                </p>
+                                <p className={`text-sm ${
+                                  variant.stock > 0 ? "text-gray-600" : "text-red-500"
+                                }`}>
+                                  {variant.stock > 0 ? `Stok: ${variant.stock}` : "Sold Out"}
+                                </p>
+                              </div>
+                            </div>
+                            {selectedVariant?.id === variant.id && (
+                              <CheckCircle className="w-5 h-5 text-brand-primary" />
+                            )}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Out of Stock Warning */}
+                {isOutOfStock() && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <span className="font-medium text-red-800">Stok tidak tersedia</span>
+                    </div>
+                  </div>
+                )}
+
+                {!isOutOfStock() && (
+                  <>
+                    {/* Quantity Selection */}
+                    <div className="space-y-4">
+                      <Label className="text-base font-medium">
+                        Jumlah <span className="text-sm text-gray-500">(Tersedia: {getAvailableStock()})</span>
+                      </Label>
+                      <div className="flex items-center gap-4">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          disabled={quantity <= 1}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <Input
+                          type="number"
+                          min="1"
+                          max={getAvailableStock()}
+                          value={quantity}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 1;
+                            setQuantity(Math.min(Math.max(1, val), getAvailableStock()));
+                          }}
+                          className="w-20 text-center text-lg font-bold"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setQuantity(Math.min(getAvailableStock(), quantity + 1))}
+                          disabled={quantity >= getAvailableStock()}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Notes Input */}
+                    {selectedProduct.enableNotes && (
+                      <div className="space-y-2">
+                        <Label htmlFor="notes">Catatan (Opsional)</Label>
+                        <Input
+                          id="notes"
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          placeholder="Contoh: warna merah, ukuran L, dll..."
+                        />
+                      </div>
+                    )}
+
+                    {/* Price Summary */}
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-medium">Total Harga:</span>
+                        <span className="text-2xl font-bold text-brand-primary">
+                          Rp {(Number(selectedProduct.price) * quantity).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedProduct(null)}
+                    className="flex-1"
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    onClick={handleAddToCart}
+                    disabled={!canAddToCart()}
+                    className="flex-1 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90"
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    {!canAddToCart()
+                      ? selectedProduct.variants.length > 0 && !selectedVariant
+                        ? "Pilih Varian Dulu"
+                        : "Stok Tidak Cukup"
+                      : "Tambah ke Keranjang"}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </PageLayout>
   );
 }
 
-// ✅ EXPORT DENGAN SUSPENSE
 export default function ProductsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
-          <div className="text-center">
-            <div className="text-6xl mb-4">🛒</div>
-            <div className="text-xl font-bold text-gray-800">
-              Loading Products...
+        <PageLayout>
+          <div className="container py-20">
+            <div className="flex items-center justify-center min-h-96">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="w-8 h-8 animate-spin brand-primary" />
+                <p className="text-lg font-semibold">Loading products...</p>
+              </div>
             </div>
           </div>
-        </div>
+        </PageLayout>
       }
     >
       <ProductsContent />
