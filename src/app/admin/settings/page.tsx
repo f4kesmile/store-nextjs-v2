@@ -1,271 +1,62 @@
-// src/app/admin/settings/page.tsx - GANTI SELURUH ISI
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export default function SettingsPage() {
-  const { data: session } = useSession();
-  const [loading, setLoading] = useState(true);
+const Icons = { gear: (p:any)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .66.26 1.3.73 1.77.47.47 1.11.73 1.77.73H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>)}
+
+export default function SettingsPage(){
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    storeName: "",
-    storeDescription: "",
-    supportWhatsApp: "",
-    supportEmail: "",
-    storeLocation: "",
-    aboutTitle: "",
-    aboutDescription: "",
-  });
+  const [formData, setFormData] = useState({ storeName: "", supportEmail: "", supportWhatsApp: "", currency: "IDR", locale: "id" });
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch("/api/settings");
-      const data = await res.json();
-      setFormData({
-        storeName: data.storeName || "",
-        storeDescription: data.storeDescription || "",
-        supportWhatsApp: data.supportWhatsApp || "",
-        supportEmail: data.supportEmail || "",
-        storeLocation: data.storeLocation || "",
-        aboutTitle: data.aboutTitle || "",
-        aboutDescription: data.aboutDescription || "",
-      });
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        alert("✅ Settings berhasil disimpan!");
-      } else {
-        alert("❌ Gagal menyimpan settings");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("❌ Gagal menyimpan settings");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
+  async function submit(e: React.FormEvent){
+    e.preventDefault(); setSaving(true);
+    try{ await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) }); }
+    finally{ setSaving(false); }
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">⚙️ Pengaturan Toko</h1>
-        <p className="text-gray-600 mt-1">Kelola pengaturan dasar toko Anda</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">📋 Informasi Dasar</h2>
-
-          <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <span className="size-8 rounded-md bg-muted grid place-items-center"><Icons.gear className="w-4 h-4"/></span>
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Nama Toko <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.storeName}
-                onChange={(e) =>
-                  setFormData({ ...formData, storeName: e.target.value })
-                }
-                className="w-full border rounded-lg p-3"
-                placeholder="Devlog Store"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Deskripsi Toko
-              </label>
-              <textarea
-                rows={3}
-                value={formData.storeDescription}
-                onChange={(e) =>
-                  setFormData({ ...formData, storeDescription: e.target.value })
-                }
-                className="w-full border rounded-lg p-3"
-                placeholder="Platform digital terpercaya Anda..."
-              />
+              <CardTitle className="text-lg">Settings</CardTitle>
+              <CardDescription>Konfigurasi dasar toko</CardDescription>
             </div>
           </div>
-        </div>
+        </CardHeader>
+      </Card>
 
-        {/* Contact Information */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">📞 Informasi Kontak</h2>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Email Support <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.supportEmail}
-                onChange={(e) =>
-                  setFormData({ ...formData, supportEmail: e.target.value })
-                }
-                className="w-full border rounded-lg p-3"
-                placeholder="support@devlog.my.id"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Email yang akan ditampilkan di halaman kontak
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                WhatsApp Support <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.supportWhatsApp}
-                onChange={(e) =>
-                  setFormData({ ...formData, supportWhatsApp: e.target.value })
-                }
-                className="w-full border rounded-lg p-3"
-                placeholder="6285185031023"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Format: 628xxx (tanpa +). Nomor ini akan digunakan untuk
-                checkout.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Lokasi Kantor
-              </label>
-              <textarea
-                rows={2}
-                value={formData.storeLocation}
-                onChange={(e) =>
-                  setFormData({ ...formData, storeLocation: e.target.value })
-                }
-                className="w-full border rounded-lg p-3"
-                placeholder="Tegal, Jawa Tengah, Indonesia"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* About Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">ℹ️ Tentang Toko</h2>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Judul Tentang
-              </label>
-              <input
-                type="text"
-                value={formData.aboutTitle}
-                onChange={(e) =>
-                  setFormData({ ...formData, aboutTitle: e.target.value })
-                }
-                className="w-full border rounded-lg p-3"
-                placeholder="Tentang Devlog Store"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Deskripsi Tentang
-              </label>
-              <textarea
-                rows={5}
-                value={formData.aboutDescription}
-                onChange={(e) =>
-                  setFormData({ ...formData, aboutDescription: e.target.value })
-                }
-                className="w-full border rounded-lg p-3"
-                placeholder="Devlog Store adalah platform digital terpercaya..."
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Teks ini akan ditampilkan di halaman kontak
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex-1 bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 disabled:bg-gray-400 transition-all"
-          >
-            {saving ? "💾 Menyimpan..." : "💾 Simpan Semua Pengaturan"}
-          </button>
-        </div>
+      <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Informasi Toko</CardTitle><CardDescription>Nama dan kontak</CardDescription></CardHeader>
+          <CardContent className="space-y-3">
+            <Input placeholder="Nama Toko" value={formData.storeName} onChange={(e)=>setFormData({...formData, storeName: e.target.value})}/>
+            <Input placeholder="Email Toko" value={formData.supportEmail} onChange={(e)=>setFormData({...formData, supportEmail: e.target.value})}/>
+            <Input placeholder="No. WhatsApp" value={formData.supportWhatsApp} onChange={(e)=>setFormData({...formData, supportWhatsApp: e.target.value})}/>
+            <Button disabled={saving}>{saving?"Menyimpan...":"Simpan"}</Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Preferensi</CardTitle><CardDescription>Mata uang & bahasa</CardDescription></CardHeader>
+          <CardContent className="space-y-3">
+            <Select value={formData.currency} onValueChange={(v)=>setFormData({...formData, currency:v})}>
+              <SelectTrigger><SelectValue placeholder="Mata uang"/></SelectTrigger>
+              <SelectContent><SelectItem value="IDR">IDR</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
+            </Select>
+            <Select value={formData.locale} onValueChange={(v)=>setFormData({...formData, locale:v})}>
+              <SelectTrigger><SelectValue placeholder="Bahasa"/></SelectTrigger>
+              <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
+            </Select>
+            <Button variant="outline" disabled={saving}>{saving?"Menyimpan...":"Simpan Preferensi"}</Button>
+          </CardContent>
+        </Card>
       </form>
-
-      {/* Preview Card */}
-      <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 border-2 border-dashed border-purple-300">
-        <h3 className="font-bold text-lg mb-3">👁️ Preview Kontak</h3>
-        <div className="bg-white rounded-lg p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">📧</span>
-            <div>
-              <p className="font-bold">Email</p>
-              <p className="text-sm text-gray-600">
-                {formData.supportEmail || "-"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">💬</span>
-            <div>
-              <p className="font-bold">WhatsApp</p>
-              <p className="text-sm text-gray-600">
-                {formData.supportWhatsApp || "-"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">📍</span>
-            <div>
-              <p className="font-bold">Lokasi</p>
-              <p className="text-sm text-gray-600">
-                {formData.storeLocation || "-"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
