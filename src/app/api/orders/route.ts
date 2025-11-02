@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveOrder, logActivity, StoredOrder } from "@/lib/storage";
+import { prisma } from "@/lib/prisma";
 
 interface CartItem {
   productId: number;
@@ -61,9 +61,9 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Calculate total amount on server for security
-    let calculatedTotal = 0;
-    let calculatedItems = 0;
+    // Process each item and create transactions
+    const transactions = [];
+    let totalCalculated = 0;
     
     for (const item of orderData.items) {
       const price = typeof item.productPrice === 'string' ? 
@@ -84,61 +84,77 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      calculatedTotal += price * item.quantity;
-      calculatedItems += item.quantity;
+      // Verify product exists
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+        include: { variants: true }
+      });
+      
+      if (!product) {
+        return NextResponse.json(
+          { error: `Produk ${item.productName} tidak ditemukan` },
+          { status: 400 }
+        );
+      }
+      
+      // Verify variant if specified
+      let variant = null;
+      if (item.variantId) {
+        variant = product.variants.find(v => v.id === item.variantId);
+        if (!variant) {
+          return NextResponse.json(
+            { error: `Varian tidak ditemukan untuk ${item.productName}` },
+            { status: 400 }
+          );
+        }
+      }
+      
+      const itemTotal = price * item.quantity;
+      totalCalculated += itemTotal;
+      
+      transactions.push({
+        productId: item.productId,
+        variantId: item.variantId || null,
+        resellerId: orderData.resellerId || null,
+        customerName: orderData.customerName,
+        customerPhone: orderData.customerPhone,
+        quantity: item.quantity,
+        totalPrice: itemTotal,
+        status: 'PENDING' as const,
+        notes: item.notes || orderData.notes || null
+      });
     }
     
     // Generate order ID
     const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    const now = new Date().toISOString();
     
-    // Create order object
-    const order: StoredOrder = {
-      id: orderId,
-      customerName: orderData.customerName,
-      customerEmail: orderData.customerEmail,
-      customerPhone: orderData.customerPhone,
-      customerAddress: orderData.customerAddress,
-      paymentMethod: orderData.paymentMethod || 'manual',
-      notes: orderData.notes || '',
-      items: orderData.items.map(item => ({
-        ...item,
-        productPrice: typeof item.productPrice === 'string' ? 
-          parseFloat(item.productPrice.replace(/[^0-9.]/g, '')) : 
-          item.productPrice
-      })),
-      totalAmount: calculatedTotal,
-      totalItems: calculatedItems,
-      status: 'pending',
-      createdAt: now,
-      updatedAt: now,
-      resellerId: orderData.resellerId || undefined,
-      resellerRef: orderData.resellerRef || undefined
-    };
-    
-    // Save order to storage
-    await saveOrder(order);
-    
-    // Log activity
-    await logActivity({
-      type: 'order_created',
-      title: `Pesanan Baru #${orderId}`,
-      description: `${orderData.customerName} membuat pesanan senilai Rp ${calculatedTotal.toLocaleString('id-ID')} dengan ${calculatedItems} item`,
-      metadata: {
-        orderId,
-        customerName: orderData.customerName,
-        totalAmount: calculatedTotal,
-        totalItems: calculatedItems,
-        resellerRef: orderData.resellerRef
+    // Create transactions in database
+    const createdTransactions = await prisma.$transaction(async (tx) => {
+      const results = [];
+      
+      for (const transactionData of transactions) {
+        const result = await tx.transaction.create({
+          data: transactionData,
+          include: {
+            product: true,
+            variant: true,
+            reseller: true
+          }
+        });
+        results.push(result);
       }
+      
+      return results;
     });
     
-    // Log for debugging
-    console.log('New order saved:', {
+    // Create a comprehensive order record (you might want to add Order model to schema)
+    // For now, we'll store in a simple orders table or use existing transaction grouping
+    
+    console.log('New transactions created:', {
       orderId,
       customer: orderData.customerName,
-      total: calculatedTotal,
-      items: calculatedItems
+      total: totalCalculated,
+      transactionIds: createdTransactions.map(t => t.id)
     });
     
     return NextResponse.json({
@@ -147,22 +163,20 @@ export async function POST(req: NextRequest) {
       message: 'Pesanan berhasil dibuat',
       order: {
         id: orderId,
-        totalAmount: calculatedTotal,
-        totalItems: calculatedItems,
-        status: 'pending'
+        totalAmount: totalCalculated,
+        totalItems: orderData.totalItems,
+        status: 'pending',
+        transactions: createdTransactions.map(t => ({
+          id: t.id,
+          productName: t.product.name,
+          quantity: t.quantity,
+          totalPrice: t.totalPrice
+        }))
       }
     }, { status: 201 });
     
   } catch (error) {
     console.error('Order creation error:', error);
-    
-    // Log error activity
-    await logActivity({
-      type: 'user_action',
-      title: 'Error Checkout',
-      description: 'Gagal membuat pesanan - sistem error',
-      metadata: { error: error instanceof Error ? error.message : 'Unknown error' }
-    });
     
     return NextResponse.json(
       { error: 'Gagal membuat pesanan. Silakan coba lagi.' },
