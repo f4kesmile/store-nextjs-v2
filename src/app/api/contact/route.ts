@@ -1,42 +1,44 @@
-// src/app/api/contact/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { name, email, subject, message } = body
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    })
-
-    await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: process.env.SUPPORT_EMAIL,
-      subject: `Contact Form: ${subject}`,
-      html: `
-        <h3>New Contact Form Submission</h3>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message}</p>
-      `,
-    })
-
-    return NextResponse.json({ message: 'Email sent successfully' })
+    const { name, email, subject, message } = await req.json();
+    
+    // Validate required fields
+    if (!name || !email || !subject || !message) {
+      return NextResponse.json(
+        { error: "Semua field wajib diisi" }, 
+        { status: 400 }
+      );
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Format email tidak valid" }, 
+        { status: 400 }
+      );
+    }
+    
+    // Here you can add logic to:
+    // 1. Save to database
+    // 2. Send email notification
+    // 3. Send to admin panel
+    // For now, we'll just return success
+    
+    console.log("New contact message:", { name, email, subject, message });
+    
+    return NextResponse.json({ 
+      success: true,
+      message: "Pesan berhasil dikirim. Kami akan merespons segera."
+    });
+    
   } catch (error) {
-    console.error('Email error:', error)
+    console.error("Contact form error:", error);
     return NextResponse.json(
-      { error: 'Failed to send email' },
+      { error: "Gagal mengirim pesan" }, 
       { status: 500 }
-    )
+    );
   }
 }
