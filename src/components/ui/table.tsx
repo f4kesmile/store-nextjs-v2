@@ -1,100 +1,74 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+// src/components/ui/Table.tsx
+import React from "react";
 
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props}
-    />
-  </div>
-))
-Table.displayName = "Table"
+interface TableProps {
+  children: React.ReactNode;
+  className?: string;
+}
 
-const TableHeader = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
-))
-TableHeader.displayName = "TableHeader"
+export function Table({ children, className = "" }: TableProps) {
+  return (
+    <div className="overflow-x-auto">
+      <table className={`w-full ${className}`}>{children}</table>
+    </div>
+  );
+}
 
-const TableBody = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
-    {...props}
-  />
-))
-TableBody.displayName = "TableBody"
+interface TableHeaderProps {
+  children: React.ReactNode;
+}
 
-const TableRow = React.forwardRef<
-  HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement>
->(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-      className
-    )}
-    {...props}
-  />
-))
-TableRow.displayName = "TableRow"
+export function TableHeader({ children }: TableHeaderProps) {
+  return <thead className="bg-gray-50">{children}</thead>;
+}
 
-const TableHead = React.forwardRef<
-  HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <th
-    ref={ref}
-    className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
-      className
-    )}
-    {...props}
-  />
-))
-TableHead.displayName = "TableHead"
+interface TableBodyProps {
+  children: React.ReactNode;
+}
 
-const TableCell = React.forwardRef<
-  HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
-    {...props}
-  />
-))
-TableCell.displayName = "TableCell"
+export function TableBody({ children }: TableBodyProps) {
+  return <tbody className="divide-y divide-gray-200">{children}</tbody>;
+}
 
-const TableCaption = React.forwardRef<
-  HTMLTableCaptionElement,
-  React.HTMLAttributes<HTMLTableCaptionElement>
->(({ className, ...props }, ref) => (
-  <caption
-    ref={ref}
-    className={cn("mt-4 text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-TableCaption.displayName = "TableCaption"
+interface TableRowProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+}
 
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableCaption,
+export function TableRow({ children, onClick, className = "" }: TableRowProps) {
+  return (
+    <tr
+      onClick={onClick}
+      className={`${
+        onClick ? "cursor-pointer" : ""
+      } hover:bg-gray-50 ${className}`}
+    >
+      {children}
+    </tr>
+  );
+}
+
+interface TableHeadProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function TableHead({ children, className = "" }: TableHeadProps) {
+  return (
+    <th
+      className={`px-6 py-4 text-left text-sm font-bold text-gray-700 ${className}`}
+    >
+      {children}
+    </th>
+  );
+}
+
+interface TableCellProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function TableCell({ children, className = "" }: TableCellProps) {
+  return <td className={`px-6 py-4 ${className}`}>{children}</td>;
 }
