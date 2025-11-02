@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { saveOrder, logActivity, StoredOrder } from "@/lib/storage";
 
 interface CartItem {
   productId: number;
@@ -87,17 +88,18 @@ export async function POST(req: NextRequest) {
       calculatedItems += item.quantity;
     }
     
-    // Generate order ID (in production, use proper ID generation)
+    // Generate order ID
     const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    const now = new Date().toISOString();
     
     // Create order object
-    const order = {
+    const order: StoredOrder = {
       id: orderId,
       customerName: orderData.customerName,
       customerEmail: orderData.customerEmail,
       customerPhone: orderData.customerPhone,
       customerAddress: orderData.customerAddress,
-      paymentMethod: orderData.paymentMethod,
+      paymentMethod: orderData.paymentMethod || 'manual',
       notes: orderData.notes || '',
       items: orderData.items.map(item => ({
         ...item,
@@ -108,22 +110,31 @@ export async function POST(req: NextRequest) {
       totalAmount: calculatedTotal,
       totalItems: calculatedItems,
       status: 'pending',
-      createdAt: new Date().toISOString(),
-      resellerId: orderData.resellerId || null,
-      resellerRef: orderData.resellerRef || null
+      createdAt: now,
+      updatedAt: now,
+      resellerId: orderData.resellerId || undefined,
+      resellerRef: orderData.resellerRef || undefined
     };
     
-    // TODO: Save to database
-    // await prisma.order.create({ data: order });
+    // Save order to storage
+    await saveOrder(order);
     
-    // TODO: Send confirmation email
-    // await sendOrderConfirmationEmail(order);
+    // Log activity
+    await logActivity({
+      type: 'order_created',
+      title: `Pesanan Baru #${orderId}`,
+      description: `${orderData.customerName} membuat pesanan senilai Rp ${calculatedTotal.toLocaleString('id-ID')} dengan ${calculatedItems} item`,
+      metadata: {
+        orderId,
+        customerName: orderData.customerName,
+        totalAmount: calculatedTotal,
+        totalItems: calculatedItems,
+        resellerRef: orderData.resellerRef
+      }
+    });
     
-    // TODO: Notify admin/reseller
-    // await notifyNewOrder(order);
-    
-    // Log order for debugging
-    console.log('New order created:', {
+    // Log for debugging
+    console.log('New order saved:', {
       orderId,
       customer: orderData.customerName,
       total: calculatedTotal,
@@ -144,6 +155,15 @@ export async function POST(req: NextRequest) {
     
   } catch (error) {
     console.error('Order creation error:', error);
+    
+    // Log error activity
+    await logActivity({
+      type: 'user_action',
+      title: 'Error Checkout',
+      description: 'Gagal membuat pesanan - sistem error',
+      metadata: { error: error instanceof Error ? error.message : 'Unknown error' }
+    });
+    
     return NextResponse.json(
       { error: 'Gagal membuat pesanan. Silakan coba lagi.' },
       { status: 500 }
