@@ -45,22 +45,24 @@ model Product {
     resellerSales ResellerSale[]
     createdAt     DateTime       @default(now()) @map("created_at")
     updatedAt     DateTime       @updatedAt @map("updated_at")
-    Transaction   Transaction[]
+    transactions  Transaction[]
+    orderItems    OrderItem[]
     enableNotes   Boolean        @default(true) @map("enable_notes")
 
     @@map("products")
 }
 
 model Variant {
-    id          Int           @id @default(autoincrement())
-    productId   Int           @map("product_id")
-    product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-    name        String // e.g., "Size", "Color"
-    value       String // e.g., "XL", "Red"
-    stock       Int           @default(0)
-    createdAt   DateTime      @default(now()) @map("created_at")
-    updatedAt   DateTime      @updatedAt @map("updated_at")
-    Transaction Transaction[]
+    id           Int           @id @default(autoincrement())
+    productId    Int           @map("product_id")
+    product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+    name         String // e.g., "Size", "Color"
+    value        String // e.g., "XL", "Red"
+    stock        Int           @default(0)
+    createdAt    DateTime      @default(now()) @map("created_at")
+    updatedAt    DateTime      @updatedAt @map("updated_at")
+    transactions Transaction[]
+    orderItems   OrderItem[]
 
     @@map("variants")
 }
@@ -72,8 +74,9 @@ model Reseller {
     uniqueId       String         @unique @map("unique_id")
     createdAt      DateTime       @default(now()) @map("created_at")
     updatedAt      DateTime       @updatedAt @map("updated_at")
-    ResellerSale   ResellerSale[]
-    Transaction    Transaction[]
+    resellerSales  ResellerSale[]
+    transactions   Transaction[]
+    orders         Order[]
 
     @@map("resellers")
 }
@@ -92,20 +95,75 @@ model ResellerSale {
     @@map("reseller_sales")
 }
 
+// New Order model for better order tracking
+model Order {
+    id              String              @id @default(cuid())
+    customerName    String              @map("customer_name")
+    customerEmail   String              @map("customer_email")
+    customerPhone   String              @map("customer_phone")
+    customerAddress String              @map("customer_address") @db.Text
+    paymentMethod   String              @default("manual") @map("payment_method")
+    notes           String?             @db.Text
+    totalAmount     Decimal             @map("total_amount") @db.Decimal(12, 2)
+    totalItems      Int                 @map("total_items")
+    status          OrderStatus         @default(PENDING)
+    resellerId      Int?                @map("reseller_id")
+    reseller        Reseller?           @relation(fields: [resellerId], references: [id])
+    items           OrderItem[]
+    createdAt       DateTime            @default(now()) @map("created_at")
+    updatedAt       DateTime            @updatedAt @map("updated_at")
+
+    @@map("orders")
+}
+
+// Order items for detailed tracking
+model OrderItem {
+    id           Int      @id @default(autoincrement())
+    orderId      String   @map("order_id")
+    order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    productId    Int      @map("product_id")
+    product      Product  @relation(fields: [productId], references: [id])
+    variantId    Int?     @map("variant_id")
+    variant      Variant? @relation(fields: [variantId], references: [id])
+    quantity     Int
+    unitPrice    Decimal  @map("unit_price") @db.Decimal(10, 2)
+    totalPrice   Decimal  @map("total_price") @db.Decimal(12, 2)
+    notes        String?  @db.Text
+    createdAt    DateTime @default(now()) @map("created_at")
+    updatedAt    DateTime @updatedAt @map("updated_at")
+
+    @@map("order_items")
+}
+
+enum OrderStatus {
+    PENDING
+    CONFIRMED
+    PROCESSING
+    COMPLETED
+    CANCELLED
+    REFUNDED
+}
+
 model SiteSettings {
-    id               Int      @id @default(autoincrement())
-    storeName        String   @default("Store Saya")
-    storeDescription String?  @map("store_description") @db.Text
-    supportWhatsApp  String   @default("6285185031023") @map("support_whatsapp")
-    supportEmail     String   @default("support@store.com") @map("support_email")
-    storeLocation    String?  @map("store_location") @db.Text
-    aboutTitle       String   @default("Tentang Devlog Store") @map("about_title")
-    aboutDescription String?  @map("about_description") @db.Text
-    updatedAt        DateTime @updatedAt @map("updated_at")
+    id                Int      @id @default(autoincrement())
+    storeName         String   @default("Store Saya")
+    storeDescription  String?  @map("store_description") @db.Text
+    supportWhatsApp   String   @default("6285185031023") @map("support_whatsapp")
+    supportEmail      String   @default("support@store.com") @map("support_email")
+    storeLocation     String?  @map("store_location") @db.Text
+    businessAddress   String?  @map("business_address") @db.Text
+    aboutTitle        String   @default("Tentang Devlog Store") @map("about_title")
+    aboutDescription  String?  @map("about_description") @db.Text
+    primaryColor      String   @default("#3B82F6") @map("primary_color")
+    secondaryColor    String   @default("#10B981") @map("secondary_color")
+    logoUrl           String?  @map("logo_url")
+    faviconUrl        String?  @map("favicon_url")
+    updatedAt         DateTime @updatedAt @map("updated_at")
 
     @@map("site_settings")
 }
 
+// Keep existing Transaction model for backward compatibility
 model Transaction {
     id            Int               @id @default(autoincrement())
     productId     Int               @map("product_id")
@@ -134,12 +192,19 @@ enum TransactionStatus {
     CANCELLED
 }
 
+// Enhanced ActivityLog model
 model ActivityLog {
-    id        Int      @id @default(autoincrement())
-    userId    Int      @map("user_id")
-    user      User     @relation(fields: [userId], references: [id])
-    action    String   @db.Text
-    timestamp DateTime @default(now())
+    id          Int      @id @default(autoincrement())
+    userId      Int?     @map("user_id")
+    user        User?    @relation(fields: [userId], references: [id])
+    type        String   @default("user_action") // order_created, product_created, etc.
+    title       String
+    description String   @db.Text
+    metadata    Json?    // Additional data
+    ipAddress   String?  @map("ip_address")
+    userAgent   String?  @map("user_agent")
+    action      String   @db.Text // Keep for backward compatibility
+    timestamp   DateTime @default(now())
 
     @@map("activity_logs")
 }
