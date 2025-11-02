@@ -21,16 +21,17 @@ import {
   ShoppingBag,
   AlertCircle,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
 
 function CartContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const resellerRef = searchParams.get("ref");
-  const { cart, updateQuantity, removeFromCart, getCartTotal, getCartCount } = useCart();
+  const { cart, updateQuantity, removeFromCart, getCartTotal, getCartCount } =
+    useCart();
   const { settings } = useSettings();
-  
+
   const goToCheckout = () => {
     router.push(resellerRef ? `/checkout?ref=${resellerRef}` : "/checkout");
   };
@@ -48,7 +49,7 @@ function CartContent() {
             />
           </div>
         </section>
-        
+
         <section className="py-12 sm:py-20 px-4">
           <div className="container">
             <div className="max-w-md mx-auto text-center space-y-6">
@@ -56,12 +57,22 @@ function CartContent() {
                 <ShoppingCart className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Keranjang Kosong</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  Keranjang Kosong
+                </h2>
                 <p className="text-gray-600">Belum ada produk yang dipilih</p>
               </div>
               <div className="space-y-4">
-                <Button asChild size="lg" className="bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 font-semibold">
-                  <Link href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}>
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 font-semibold"
+                >
+                  <Link
+                    href={
+                      resellerRef ? `/products?ref=${resellerRef}` : "/products"
+                    }
+                  >
                     <ShoppingBag className="w-5 h-5 mr-2" />
                     Mulai Belanja
                   </Link>
@@ -100,42 +111,66 @@ function CartContent() {
               <CardContent className="p-4 text-center">
                 <div className="flex items-center justify-center gap-2 text-blue-800">
                   <Package className="w-5 h-5" />
-                  <span className="font-semibold">Produk Digital - Tanpa Pengiriman Fisik</span>
+                  <span className="font-semibold">
+                    Produk Digital - Tanpa Pengiriman Fisik
+                  </span>
                 </div>
-                <p className="text-sm text-blue-700 mt-1">Akses produk langsung dikirim ke email setelah pembayaran dikonfirmasi</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  Akses produk langsung dikirim ke email setelah pembayaran
+                  dikonfirmasi
+                </p>
               </CardContent>
             </Card>
 
             <div className="space-y-4">
               {cart.map((item) => {
-                const unitPrice = typeof item.productPrice === "string"
-                  ? parseFloat(item.productPrice.replace(/[^0-9.]/g, ""))
-                  : Number(item.productPrice);
+                const unitPrice =
+                  typeof item.productPrice === "string"
+                    ? parseFloat(
+                        (item.productPrice as string).replace(/[^0-9.]/g, "")
+                      )
+                    : Number(item.productPrice);
                 const maxStock = Number(item.maxStock ?? 0) || 999;
                 const variantId = item.variantId ?? 0;
 
                 return (
-                  <Card key={`${item.productId}-${item.variantId || 'no-variant'}`} className="overflow-hidden">
+                  <Card
+                    key={`${item.productId}-${item.variantId || "no-variant"}`}
+                    className="overflow-hidden"
+                  >
                     <CardContent className="p-4 sm:p-6">
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex gap-4 flex-1">
                           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center">
                             {item.productImage ? (
-                              <img src={item.productImage} alt={item.productName} className="w-full h-full object-cover rounded-lg" />
+                              <img
+                                src={item.productImage}
+                                alt={item.productName}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
                             ) : (
                               <Package className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
                             )}
                           </div>
                           <div className="flex-1 space-y-2">
-                            <h3 className="font-semibold text-base sm:text-lg text-gray-900">{item.productName}</h3>
+                            <h3 className="font-semibold text-base sm:text-lg text-gray-900">
+                              {item.productName}
+                            </h3>
                             {item.variantName && item.variantValue && (
-                              <Badge variant="secondary" className="text-xs">{item.variantName}: {item.variantValue}</Badge>
+                              <Badge variant="secondary" className="text-xs">
+                                {item.variantName}: {item.variantValue}
+                              </Badge>
                             )}
                             {item.notes && (
-                              <p className="text-xs sm:text-sm text-gray-600 bg-gray-50 p-2 rounded"><strong>Catatan:</strong> {item.notes}</p>
+                              <p className="text-xs sm:text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                                <strong>Catatan:</strong> {item.notes}
+                              </p>
                             )}
                             <div className="text-lg sm:text-xl font-bold text-brand-primary">
-                              Rp {(unitPrice * item.quantity).toLocaleString("id-ID")}
+                              Rp{" "}
+                              {(unitPrice * item.quantity).toLocaleString(
+                                "id-ID"
+                              )}
                             </div>
                           </div>
                         </div>
@@ -145,7 +180,13 @@ function CartContent() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateQuantity(item.productId, variantId, Math.max(1, item.quantity - 1))}
+                              onClick={() =>
+                                updateQuantity(
+                                  item.productId,
+                                  variantId,
+                                  Math.max(1, item.quantity - 1)
+                                )
+                              }
                               disabled={item.quantity <= 1}
                               className="h-8 w-8 p-0"
                             >
@@ -159,8 +200,15 @@ function CartContent() {
                               value={item.quantity}
                               onChange={(e) => {
                                 const val = parseInt(e.target.value) || 1;
-                                const capped = Math.min(Math.max(1, val), maxStock);
-                                updateQuantity(item.productId, variantId, capped);
+                                const capped = Math.min(
+                                  Math.max(1, val),
+                                  maxStock
+                                );
+                                updateQuantity(
+                                  item.productId,
+                                  variantId,
+                                  capped
+                                );
                               }}
                               className="w-16 text-center text-sm font-bold h-8"
                             />
@@ -168,7 +216,13 @@ function CartContent() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateQuantity(item.productId, variantId, Math.min(maxStock, item.quantity + 1))}
+                              onClick={() =>
+                                updateQuantity(
+                                  item.productId,
+                                  variantId,
+                                  Math.min(maxStock, item.quantity + 1)
+                                )
+                              }
                               disabled={item.quantity >= maxStock}
                               className="h-8 w-8 p-0"
                             >
@@ -179,7 +233,9 @@ function CartContent() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => removeFromCart(item.productId, variantId)}
+                            onClick={() =>
+                              removeFromCart(item.productId, variantId)
+                            }
                             className="h-8 px-3"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -194,13 +250,19 @@ function CartContent() {
 
             <Card className="bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5 border-brand-primary/20">
               <CardHeader>
-                <CardTitle className="text-xl text-gray-900">Ringkasan Pesanan</CardTitle>
+                <CardTitle className="text-xl text-gray-900">
+                  Ringkasan Pesanan
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between text-base">
-                    <span className="text-gray-700">Subtotal ({getCartCount()} item):</span>
-                    <span className="font-semibold">Rp {getCartTotal().toLocaleString("id-ID")}</span>
+                    <span className="text-gray-700">
+                      Subtotal ({getCartCount()} item):
+                    </span>
+                    <span className="font-semibold">
+                      Rp {getCartTotal().toLocaleString("id-ID")}
+                    </span>
                   </div>
                   <div className="flex justify-between text-base">
                     <span className="text-gray-700">Biaya Admin:</span>
@@ -209,18 +271,35 @@ function CartContent() {
                   <hr className="border-gray-200" />
                   <div className="flex justify-between text-xl font-bold">
                     <span className="text-gray-900">Total:</span>
-                    <span className="text-brand-primary">Rp {getCartTotal().toLocaleString("id-ID")}</span>
+                    <span className="text-brand-primary">
+                      Rp {getCartTotal().toLocaleString("id-ID")}
+                    </span>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3 pt-4">
-                  <Button onClick={goToCheckout} className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 h-12 text-base font-bold" size="lg">
+                  <Button
+                    onClick={goToCheckout}
+                    className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 h-12 text-base font-bold"
+                    size="lg"
+                  >
                     <ArrowRight className="w-5 h-5 mr-2" />
                     Lanjut ke Checkout
                   </Button>
-                  
-                  <Button asChild variant="outline" className="w-full h-12 text-base font-semibold" size="lg">
-                    <Link href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}>
+
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full h-12 text-base font-semibold"
+                    size="lg"
+                  >
+                    <Link
+                      href={
+                        resellerRef
+                          ? `/products?ref=${resellerRef}`
+                          : "/products"
+                      }
+                    >
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Lanjut Belanja
                     </Link>
@@ -237,15 +316,17 @@ function CartContent() {
 
 export default function CartPage() {
   return (
-    <Suspense fallback={
-      <PageLayout>
-        <div className="container py-20">
-          <div className="flex items-center justify-center min-h-96">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    <Suspense
+      fallback={
+        <PageLayout>
+          <div className="container py-20">
+            <div className="flex items-center justify-center min-h-96">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
           </div>
-        </div>
-      </PageLayout>
-    }>
+        </PageLayout>
+      }
+    >
       <CartContent />
     </Suspense>
   );
