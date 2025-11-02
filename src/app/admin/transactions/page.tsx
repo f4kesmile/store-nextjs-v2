@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import {
   DollarSign,
   Search,
-  Filter,
   Download,
   Eye,
   Clock,
@@ -20,7 +20,7 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
-  Plus
+  ArrowRight
 } from "lucide-react";
 
 interface Order {
@@ -30,88 +30,56 @@ interface Order {
   customerPhone: string;
   totalAmount: number;
   totalItems: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'processing' | 'completed' | 'cancelled' | 'refunded';
   createdAt: string;
-  items: any[];
-  resellerRef?: string;
 }
 
 interface OrdersResponse {
   orders: Order[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    hasMore: boolean;
-  };
-  summary: {
-    totalOrders: number;
-    totalRevenue: number;
-    pendingOrders: number;
-    completedOrders: number;
-  };
+  pagination: { page: number; limit: number; total: number; hasMore: boolean };
+  summary: { totalOrders: number; totalRevenue: number; pendingOrders: number; completedOrders: number };
 }
 
 export default function TransactionsPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [summary, setSummary] = useState({
-    totalOrders: 0,
-    totalRevenue: 0,
-    pendingOrders: 0,
-    completedOrders: 0
-  });
+  const [summary, setSummary] = useState({ totalOrders: 0, totalRevenue: 0, pendingOrders: 0, completedOrders: 0 });
 
-  useEffect(() => {
-    fetchOrders();
-  }, [statusFilter]);
+  useEffect(() => { fetchOrders(); }, [statusFilter]);
 
-  const fetchOrders = async () => {
+  async function fetchOrders(){
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/orders?status=${statusFilter}&limit=50`);
-      const data: OrdersResponse = await response.json();
-      
+      const res = await fetch(`/api/admin/orders?status=${statusFilter}&limit=50`);
+      const data: OrdersResponse = await res.json();
       setOrders(data.orders || []);
-      setSummary(data.summary || {
-        totalOrders: 0,
-        totalRevenue: 0,
-        pendingOrders: 0,
-        completedOrders: 0
-      });
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setSummary(data.summary || summary);
+    } finally { setLoading(false); }
+  }
 
-  const filteredOrders = orders.filter(order => 
-    order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.id.toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = orders.filter(o =>
+    o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    o.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    o.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
-        return { variant: 'secondary' as const, icon: Clock, text: 'Pending', color: 'text-yellow-600' };
-      case 'confirmed':
-        return { variant: 'default' as const, icon: AlertCircle, text: 'Confirmed', color: 'text-blue-600' };
-      case 'completed':
-        return { variant: 'default' as const, icon: CheckCircle, text: 'Completed', color: 'text-green-600' };
-      case 'cancelled':
-        return { variant: 'destructive' as const, icon: XCircle, text: 'Cancelled', color: 'text-red-600' };
-      default:
-        return { variant: 'secondary' as const, icon: Clock, text: status, color: 'text-gray-600' };
+      case 'pending': return { variant: 'secondary' as const, icon: Clock, text: 'Pending' };
+      case 'confirmed': return { variant: 'default' as const, icon: AlertCircle, text: 'Confirmed' };
+      case 'processing': return { variant: 'default' as const, icon: ArrowRight, text: 'Processing' };
+      case 'completed': return { variant: 'default' as const, icon: CheckCircle, text: 'Completed' };
+      case 'cancelled': return { variant: 'destructive' as const, icon: XCircle, text: 'Cancelled' };
+      case 'refunded': return { variant: 'secondary' as const, icon: AlertCircle, text: 'Refunded' };
+      default: return { variant: 'secondary' as const, icon: Clock, text: status };
     }
   };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <Card className="bg-gradient-to-r from-primary/5 to-secondary/5">
         <CardHeader>
           <div className="flex items-center gap-4">
@@ -120,66 +88,30 @@ export default function TransactionsPage() {
             </div>
             <div>
               <CardTitle className="text-2xl">Manajemen Transaksi</CardTitle>
-              <CardDescription className="text-base">
-                Kelola semua pesanan dan transaksi dari customer
-              </CardDescription>
+              <CardDescription className="text-base">Kelola semua pesanan dan transaksi dari customer</CardDescription>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="text-center">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-primary">{summary.totalOrders}</div>
-            <div className="text-sm text-muted-foreground">Total Pesanan</div>
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">Rp {summary.totalRevenue.toLocaleString('id-ID')}</div>
-            <div className="text-sm text-muted-foreground">Total Revenue</div>
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">{summary.pendingOrders}</div>
-            <div className="text-sm text-muted-foreground">Pending</div>
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{summary.completedOrders}</div>
-            <div className="text-sm text-muted-foreground">Completed</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
             <div className="flex items-center gap-4 flex-1">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Cari pesanan..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input placeholder="Cari pesanan..." value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} className="pl-10" />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
+                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Status</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -198,9 +130,9 @@ export default function TransactionsPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-          ) : filteredOrders.length > 0 ? (
+          ) : filtered.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -215,40 +147,31 @@ export default function TransactionsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order) => {
+                  {filtered.map((order) => {
                     const statusInfo = getStatusBadge(order.status);
+                    const StatusIcon = statusInfo.icon;
                     return (
                       <TableRow key={order.id}>
-                        <TableCell>
-                          <div className="font-mono text-sm">{order.id}</div>
-                        </TableCell>
+                        <TableCell><div className="font-mono text-sm">{order.id}</div></TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="font-medium text-sm">{order.customerName}</div>
                             <div className="text-xs text-gray-500">{order.customerEmail}</div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="text-sm">{order.totalItems} item</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-semibold text-primary">
-                            Rp {order.totalAmount.toLocaleString('id-ID')}
-                          </div>
-                        </TableCell>
+                        <TableCell><div className="text-sm">{order.totalItems} item</div></TableCell>
+                        <TableCell><div className="font-semibold text-primary">Rp {order.totalAmount.toLocaleString('id-ID')}</div></TableCell>
                         <TableCell>
                           <Badge variant={statusInfo.variant} className="flex items-center gap-1 w-fit">
-                            <statusInfo.icon className="w-3 h-3" />
-                            {statusInfo.text}
+                            <StatusIcon className="w-3 h-3" />{statusInfo.text}
                           </Badge>
                         </TableCell>
+                        <TableCell><div className="text-sm text-gray-600">{formatDate(order.createdAt)}</div></TableCell>
                         <TableCell>
-                          <div className="text-sm text-gray-600">{formatDate(order.createdAt)}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            Detail
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/admin/transactions/${order.id}`}> 
+                              <Eye className="w-4 h-4 mr-2" /> Detail
+                            </Link>
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -260,22 +183,9 @@ export default function TransactionsPage() {
           ) : (
             <div className="text-center py-12">
               <DollarSign className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                {searchTerm ? "Tidak ada pesanan yang cocok" : "Belum ada transaksi"}
-              </h3>
-              <p className="text-gray-500 mb-6">
-                {searchTerm 
-                  ? "Coba kata kunci yang berbeda" 
-                  : "Transaksi akan muncul setelah customer melakukan checkout"}
-              </p>
-              {!searchTerm && (
-                <Button asChild>
-                  <Link href="/admin/products">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Tambah Produk
-                  </Link>
-                </Button>
-              )}
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">{searchTerm ? "Tidak ada pesanan yang cocok" : "Belum ada transaksi"}</h3>
+              <p className="text-gray-500 mb-6">{searchTerm ? "Coba kata kunci yang berbeda" : "Transaksi akan muncul setelah customer melakukan checkout"}</p>
+              <Button asChild><Link href="/admin/products">Tambah Produk</Link></Button>
             </div>
           )}
         </CardContent>
