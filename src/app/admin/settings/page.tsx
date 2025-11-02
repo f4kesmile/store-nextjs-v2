@@ -10,7 +10,7 @@ const Icons = { gear: (p:any)=>(<svg viewBox="0 0 24 24" fill="none" stroke="cur
 
 export default function SettingsPage(){
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({ storeName: "", supportEmail: "", supportWhatsApp: "", currency: "IDR", locale: "id" });
+  const [formData, setFormData] = useState({ storeName: "", supportEmail: "", supportWhatsApp: "", locale: "id" });
 
   async function submit(e: React.FormEvent){
     e.preventDefault(); setSaving(true);
@@ -43,12 +43,8 @@ export default function SettingsPage(){
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">Preferensi</CardTitle><CardDescription>Mata uang & bahasa</CardDescription></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Preferensi</CardTitle><CardDescription>Bahasa/Locale</CardDescription></CardHeader>
           <CardContent className="space-y-3">
-            <Select value={formData.currency} onValueChange={(v)=>setFormData({...formData, currency:v})}>
-              <SelectTrigger><SelectValue placeholder="Mata uang"/></SelectTrigger>
-              <SelectContent><SelectItem value="IDR">IDR</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent>
-            </Select>
             <Select value={formData.locale} onValueChange={(v)=>setFormData({...formData, locale:v})}>
               <SelectTrigger><SelectValue placeholder="Bahasa"/></SelectTrigger>
               <SelectContent><SelectItem value="id">Indonesia</SelectItem><SelectItem value="en">English</SelectItem></SelectContent>
