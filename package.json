@@ -8,31 +8,28 @@
     "start": "next start"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "jspdf": "^3.0.3"
-=======
+    "@radix-ui/react-slot": "^1.2.3",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.292.0",
+    "next": "^14.0.0",
+    "postcss": "^8.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "next": "^14.0.0",
-    "lucide-react": "^0.292.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
     "tailwindcss": "^3.3.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
-    "jspdf": "^2.5.1",
-    "clsx": "^2.0.0",
-    "class-variance-authority": "^0.7.0"
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
     "eslint": "^8.0.0",
-    "eslint-config-next": "^14.0.0"
->>>>>>> 23b0fddc5b0ca078a43ead1db52287bd0ef9107c
+    "eslint-config-next": "^14.0.0",
+    "typescript": "^5.0.0"
   }
 }
