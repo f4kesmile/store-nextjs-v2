@@ -264,8 +264,8 @@ function ProductsContent() {
           <SectionHeader
             title="Katalog Produk"
             description={`Menampilkan ${filteredProducts.length} produk dari ${products.length} total produk`}
-            icon={<Package className="w-6 h-6" />}
-            className="mb-8 sm:mb-12"
+            icon={<Package className="w-6 h-6 text-gray-900" />}
+            className="mb-8 sm:mb-12 relative z-10 [&_.section-title]:text-gray-900 [&_.section-desc]:text-gray-600"
           />
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
@@ -305,6 +305,7 @@ function ProductsContent() {
                             size="sm"
                             className="rounded-full shadow-lg h-8 w-8 sm:h-10 sm:w-10 p-0"
                             onClick={() => openProductModal(product)}
+                            type="button"
                           >
                             <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Button>
@@ -409,10 +410,22 @@ function ProductsContent() {
         </div>
       </section>
 
-      {/* Product Modal - Mobile Optimized */}
+      {/* Product Modal - FIXED CLOSE BUTTON */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <Card className="w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom sm:slide-in-from-top">
+          <Card className="relative w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom sm:slide-in-from-top">
+            {/* CLOSE BUTTON - FIXED POSITION TOP RIGHT */}
+            <Button
+              variant="secondary"
+              size="sm"
+              className="absolute top-2 sm:top-4 right-2 sm:right-4 z-20 rounded-full h-8 w-8 sm:h-10 sm:w-10 p-0"
+              onClick={() => setSelectedProduct(null)}
+              type="button"
+              aria-label="Tutup modal"
+            >
+              <X className="w-3 h-3 sm:w-4 sm:h-4" />
+            </Button>
+            
             <CardContent className="p-0">
               {/* Modal Header */}
               <div className="relative">
@@ -427,14 +440,6 @@ function ProductsContent() {
                     <Package className="w-16 h-16 sm:w-24 sm:h-24 text-gray-400" />
                   )}
                 </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="absolute top-2 sm:top-4 right-2 sm:right-4 rounded-full h-8 w-8 sm:h-10 sm:w-10 p-0"
-                  onClick={() => setSelectedProduct(null)}
-                >
-                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                </Button>
               </div>
               
               <div className="p-4 sm:p-8 space-y-4 sm:space-y-6">
@@ -529,6 +534,7 @@ function ProductsContent() {
                           onClick={() => setQuantity(Math.max(1, quantity - 1))}
                           disabled={quantity <= 1}
                           className="h-10 w-10 sm:h-12 sm:w-12"
+                          type="button"
                         >
                           <Minus className="w-4 h-4" />
                         </Button>
@@ -549,6 +555,7 @@ function ProductsContent() {
                           onClick={() => setQuantity(Math.min(getAvailableStock(), quantity + 1))}
                           disabled={quantity >= getAvailableStock()}
                           className="h-10 w-10 sm:h-12 sm:w-12"
+                          type="button"
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
@@ -587,6 +594,7 @@ function ProductsContent() {
                     variant="outline"
                     onClick={() => setSelectedProduct(null)}
                     className="flex-1 h-11 sm:h-12 text-sm sm:text-base font-semibold"
+                    type="button"
                   >
                     Batal
                   </Button>
@@ -594,6 +602,7 @@ function ProductsContent() {
                     onClick={handleAddToCart}
                     disabled={!canAddToCart()}
                     className="flex-1 bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 h-11 sm:h-12 text-sm sm:text-base font-semibold"
+                    type="button"
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     {!canAddToCart()
