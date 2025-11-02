@@ -123,7 +123,7 @@ function CartContent() {
                     ? parseFloat((item.productPrice as string).replace(/[^0-9.]/g, ""))
                     : Number(item.productPrice);
                 const maxStock = Number(item.maxStock ?? 0) || 999;
-                const variantId = item.variantId || null;
+                const variantId = item.variantId ?? 0;
 
                 return (
                   <Card key={`${item.productId}-${item.variantId || "no-variant"}`} className="overflow-hidden">
@@ -169,7 +169,7 @@ function CartContent() {
                               onClick={() =>
                                 updateQuantity(
                                   item.productId,
-                                  variantId,
+                                  variantId ?? 0,
                                   Math.max(1, item.quantity - 1)
                                 )
                               }
@@ -187,7 +187,7 @@ function CartContent() {
                               onChange={(e) => {
                                 const val = parseInt(e.target.value) || 1;
                                 const capped = Math.min(Math.max(1, val), maxStock);
-                                updateQuantity(item.productId, variantId, capped);
+                                updateQuantity(item.productId, variantId ?? 0, capped);
                               }}
                               className="w-16 text-center text-sm font-bold h-8"
                             />
@@ -198,7 +198,7 @@ function CartContent() {
                               onClick={() =>
                                 updateQuantity(
                                   item.productId,
-                                  variantId,
+                                  variantId ?? 0,
                                   Math.min(maxStock, item.quantity + 1)
                                 )
                               }
@@ -212,7 +212,7 @@ function CartContent() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => removeFromCart(item.productId, variantId)}
+                            onClick={() => removeFromCart(item.productId, variantId ?? 0)}
                             className="h-8 px-3"
                           >
                             <Trash2 className="w-3 h-3" />
