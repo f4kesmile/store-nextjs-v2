@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { SectionHeader } from "@/components/ui/section-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -23,7 +22,8 @@ import {
   CheckCircle,
   AlertTriangle,
   ArrowLeft,
-  Loader2
+  Loader2,
+  Phone
 } from "lucide-react";
 import Link from "next/link";
 
@@ -41,7 +41,7 @@ function CartContent() {
   const { settings } = useSettings();
   const toast = useToast();
   
-  const { cart, updateQuantity, removeFromCart, getTotalPrice, getTotalItems } = useCart();
+  const { cart, updateQuantity, removeFromCart, getCartTotal, getCartCount } = useCart();
   const [reseller, setReseller] = useState<Reseller | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -73,7 +73,8 @@ function CartContent() {
       });
       return;
     }
-    updateQuantity(productId, variantId, newQuantity);
+    // Fix parameter order: productId, quantity, variantId
+    updateQuantity(productId, newQuantity, variantId);
   };
 
   const handleRemoveItem = (productId: number, variantId: number | undefined) => {
@@ -96,20 +97,29 @@ function CartContent() {
       <PageLayout>
         <section className="py-20 px-4">
           <div className="container">
-            <div className="max-w-md mx-auto text-center space-y-6">
-              <div className="w-32 h-32 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+            <div className="max-w-md mx-auto text-center space-y-8">
+              <div className="w-32 h-32 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
                 <ShoppingCart className="w-16 h-16 text-gray-400" />
               </div>
-              <div className="space-y-2">
-                <h2 className="text-2xl font-bold text-gray-900">Keranjang Kosong</h2>
-                <p className="text-gray-600">Belum ada produk yang ditambahkan ke keranjang</p>
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold text-gray-900">Keranjang Kosong</h2>
+                <p className="text-lg text-gray-600">Belum ada produk yang ditambahkan ke keranjang Anda</p>
               </div>
-              <Button asChild className="bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90">
-                <Link href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}>
-                  <Package className="w-4 h-4 mr-2" />
-                  Mulai Belanja
-                </Link>
-              </Button>
+              <div className="space-y-4">
+                <Button 
+                  asChild 
+                  size="lg"
+                  className="bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 px-8"
+                >
+                  <Link href={resellerRef ? `/products?ref=${resellerRef}` : "/products"}>
+                    <Package className="w-5 h-5 mr-2" />
+                    Mulai Belanja
+                  </Link>
+                </Button>
+                <div className="text-sm text-gray-500">
+                  Atau <Link href="/contact" className="text-brand-primary hover:underline">hubungi kami</Link> jika butuh bantuan
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -124,7 +134,7 @@ function CartContent() {
         <div className="container">
           <SectionHeader
             title="Keranjang Belanja"
-            description={`${getTotalItems()} item dalam keranjang Anda`}
+            description={`${getCartCount()} item dalam keranjang Anda`}
             icon={<ShoppingCart className="w-6 h-6" />}
           />
         </div>
@@ -161,11 +171,11 @@ function CartContent() {
               
               <div className="space-y-4">
                 {cart.map((item) => (
-                  <Card key={`${item.productId}-${item.variantId || 'no-variant'}`} className="overflow-hidden">
+                  <Card key={`${item.productId}-${item.variantId || 'no-variant'}`} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex gap-4">
                         {/* Product Image */}
-                        <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {item.productImage ? (
                             <img
                               src={item.productImage}
@@ -180,7 +190,7 @@ function CartContent() {
                         {/* Product Details */}
                         <div className="flex-1 space-y-3">
                           <div className="space-y-1">
-                            <h4 className="font-semibold text-gray-900">{item.productName}</h4>
+                            <h4 className="font-semibold text-gray-900 text-lg">{item.productName}</h4>
                             {item.variantName && (
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="text-xs">
@@ -189,34 +199,39 @@ function CartContent() {
                               </div>
                             )}
                             {item.notes && (
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
                                 <span className="font-medium">Catatan:</span> {item.notes}
                               </p>
                             )}
                           </div>
                           
                           <div className="flex items-center justify-between">
-                            <div className="text-lg font-bold text-brand-primary">
+                            <div className="text-xl font-bold text-brand-primary">
                               Rp {item.productPrice.toLocaleString("id-ID")}
+                              <span className="text-sm text-gray-500 font-normal ml-2">per item</span>
                             </div>
                             
                             {/* Quantity Controls */}
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2 border rounded-lg">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2 border rounded-lg bg-white">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleQuantityUpdate(item.productId, item.variantId, item.quantity - 1, item.maxStock)}
                                   disabled={item.quantity <= 1}
+                                  className="h-10 w-10 p-0"
                                 >
                                   <Minus className="w-4 h-4" />
                                 </Button>
-                                <span className="w-12 text-center font-medium">{item.quantity}</span>
+                                <div className="w-16 text-center font-semibold text-lg">
+                                  {item.quantity}
+                                </div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleQuantityUpdate(item.productId, item.variantId, item.quantity + 1, item.maxStock)}
                                   disabled={item.quantity >= item.maxStock}
+                                  className="h-10 w-10 p-0"
                                 >
                                   <Plus className="w-4 h-4" />
                                 </Button>
@@ -226,7 +241,7 @@ function CartContent() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleRemoveItem(item.productId, item.variantId)}
-                                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 h-10 w-10 p-0"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -235,17 +250,17 @@ function CartContent() {
                           
                           {/* Stock Warning */}
                           {item.quantity >= item.maxStock * 0.8 && (
-                            <div className="flex items-center gap-2 text-orange-600 text-sm">
+                            <div className="flex items-center gap-2 text-orange-600 text-sm bg-orange-50 p-2 rounded">
                               <AlertTriangle className="w-4 h-4" />
                               Stok terbatas (tersisa {item.maxStock})
                             </div>
                           )}
                           
                           {/* Subtotal */}
-                          <div className="pt-2 border-t">
+                          <div className="pt-3 border-t">
                             <div className="flex justify-between items-center">
                               <span className="text-sm text-gray-600">Subtotal:</span>
-                              <span className="font-semibold text-lg">
+                              <span className="font-bold text-xl text-brand-primary">
                                 Rp {(item.productPrice * item.quantity).toLocaleString("id-ID")}
                               </span>
                             </div>
@@ -260,43 +275,47 @@ function CartContent() {
             
             {/* Order Summary */}
             <div className="space-y-6">
-              <Card className="sticky top-24">
+              <Card className="sticky top-24 shadow-xl">
                 <CardContent className="p-6 space-y-6">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <CreditCard className="w-6 h-6 text-brand-primary" />
                     Ringkasan Pesanan
                   </h3>
                   
                   <div className="space-y-4">
                     <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-base">
                         <span className="text-gray-600">Jumlah Item:</span>
-                        <span className="font-medium">{getTotalItems()} item</span>
+                        <span className="font-semibold">{getCartCount()} item</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-base">
                         <span className="text-gray-600">Subtotal:</span>
-                        <span className="font-medium">Rp {getTotalPrice().toLocaleString("id-ID")}</span>
+                        <span className="font-semibold">Rp {getCartTotal().toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="flex justify-between text-base">
+                        <span className="text-gray-600">Biaya Admin:</span>
+                        <span className="font-semibold text-green-600">Gratis</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Biaya Admin:</span>
-                        <span className="font-medium text-green-600">Gratis</span>
+                        <span className="text-gray-500">Pengiriman:</span>
+                        <span className="text-blue-600 text-sm">Akan dihitung saat checkout</span>
                       </div>
                     </div>
                     
                     <Separator />
                     
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-semibold">Total:</span>
-                      <span className="text-2xl font-bold text-brand-primary">
-                        Rp {getTotalPrice().toLocaleString("id-ID")}
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-xl font-bold">Total:</span>
+                      <span className="text-3xl font-bold text-brand-primary">
+                        Rp {getCartTotal().toLocaleString("id-ID")}
                       </span>
                     </div>
                   </div>
                   
                   <Button
                     onClick={handleCheckout}
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 text-lg py-6"
+                    disabled={loading || cart.length === 0}
+                    className="w-full bg-gradient-to-r from-brand-primary to-brand-secondary hover:opacity-90 text-lg py-6 shadow-lg"
                   >
                     {loading ? (
                       <>
@@ -312,20 +331,20 @@ function CartContent() {
                   </Button>
                   
                   {/* Security Info */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-xs text-green-800">
-                        <p className="font-medium mb-1">Transaksi Aman</p>
-                        <p>Data Anda dilindungi dengan enkripsi SSL</p>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-green-800">
+                        <p className="font-semibold mb-1">Transaksi Aman & Terpercaya</p>
+                        <p className="text-xs">Data Anda dilindungi dengan enkripsi SSL dan sistem keamanan berlapis</p>
                       </div>
                     </div>
                   </div>
                   
                   {/* Contact Support */}
                   {settings.supportWhatsApp && (
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">Butuh bantuan?</p>
+                    <div className="text-center pt-4 border-t">
+                      <p className="text-sm text-gray-600 mb-3">Butuh bantuan dengan pesanan?</p>
                       <Button
                         variant="outline"
                         size="sm"
@@ -337,11 +356,36 @@ function CartContent() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
+                          <Phone className="w-4 h-4 mr-2" />
                           Chat Customer Service
                         </a>
                       </Button>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+              
+              {/* Trust Badges */}
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-0">
+                <CardContent className="p-4 text-center">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">Garansi Uang Kembali</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">Support 24/7</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">Produk Original</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">Pengiriman Cepat</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
