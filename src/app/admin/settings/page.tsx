@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/toast";
+import { useSettings } from "@/contexts/SettingsContext";
 import { Loader2 } from "lucide-react";
 
 const Icons = { 
@@ -13,7 +14,9 @@ const Icons = {
 };
 
 export default function SettingsPage(){
-  const [loading, setLoading] = useState(true);
+  const toast = useToast();
+  const { settings, loading, refresh, setSettingsLocal } = useSettings();
+
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
@@ -33,28 +36,26 @@ export default function SettingsPage(){
     theme: "light" as "light" | "dark",
   });
 
-  // Auto-fetch existing settings on page load
+  // Auto-fill form with existing settings
   useEffect(() => {
-    async function fetchSettings() {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/settings");
-        if (res.ok) {
-          const data = await res.json();
-          setFormData(prev => ({ ...prev, ...data }));
-          toast.success("Settings loaded successfully");
-        } else {
-          throw new Error('Failed to fetch settings');
-        }
-      } catch (error) {
-        console.error('Error fetching settings:', error);
-        toast.error("Failed to load settings");
-      } finally {
-        setLoading(false);
-      }
+    if (!loading && settings) {
+      setFormData({
+        storeName: settings.storeName || "",
+        storeDescription: settings.storeDescription || "",
+        supportEmail: settings.supportEmail || "",
+        supportWhatsApp: settings.supportWhatsApp || "",
+        storeLocation: settings.storeLocation || "",
+        aboutTitle: settings.aboutTitle || "",
+        aboutDescription: settings.aboutDescription || "",
+        locale: settings.locale || "id",
+        logoUrl: settings.logoUrl || "",
+        faviconUrl: settings.faviconUrl || "",
+        primaryColor: settings.primaryColor || "#2563EB",
+        secondaryColor: settings.secondaryColor || "#10B981",
+        theme: (settings.theme as "light" | "dark") || "light",
+      });
     }
-    fetchSettings();
-  }, []);
+  }, [loading, settings]);
 
   async function submit(e: React.FormEvent){
     e.preventDefault(); 
@@ -68,15 +69,22 @@ export default function SettingsPage(){
       });
       
       if (res.ok) {
-        toast.success("✅ Berhasil disimpan!");
-        // Trigger a custom event to notify other components about settings update
-        window.dispatchEvent(new CustomEvent('settings-updated', { detail: formData }));
+        await refresh();
+        toast({ 
+          title: "\u2705 Berhasil disimpan!", 
+          description: "Pengaturan telah diperbarui.",
+          variant: "success" 
+        });
       } else {
         throw new Error('Failed to save settings');
       }
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error("❌ Gagal menyimpan settings");
+      toast({ 
+        title: "\u274c Gagal menyimpan", 
+        description: "Silakan coba lagi.",
+        variant: "destructive" 
+      });
     } finally{ 
       setSaving(false); 
     }
@@ -87,7 +95,11 @@ export default function SettingsPage(){
     
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File terlalu besar. Maksimal 5MB");
+      toast({ 
+        title: "File terlalu besar", 
+        description: "Maksimal ukuran file 5MB",
+        variant: "destructive" 
+      });
       return;
     }
     
@@ -104,30 +116,67 @@ export default function SettingsPage(){
       if (res.ok) {
         if(data.logoPath && kind === "logo"){ 
           setFormData(prev=>({ ...prev, logoUrl: data.logoPath })); 
-          toast.success("✅ Logo berhasil diupload!");
+          setSettingsLocal({ logoUrl: data.logoPath });
+          toast({ 
+            title: "\u2705 Logo berhasil diupload!", 
+            variant: "success" 
+          });
         }
         if(data.faviconPath && kind === "favicon"){ 
           setFormData(prev=>({ ...prev, faviconUrl: data.faviconPath })); 
-          toast.success("✅ Favicon berhasil diupload!");
+          setSettingsLocal({ faviconUrl: data.faviconPath });
+          toast({ 
+            title: "\u2705 Favicon berhasil diupload!", 
+            variant: "success" 
+          });
         }
       } else {
         throw new Error(data.error || 'Upload failed');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(`❌ Gagal upload ${kind === 'logo' ? 'logo' : 'favicon'}`);
+      toast({ 
+        title: `\u274c Gagal upload ${kind === 'logo' ? 'logo' : 'favicon'}`, 
+        description: "Silakan coba lagi.",
+        variant: "destructive" 
+      });
     } finally{ 
       if(kind === "logo") setUploadingLogo(false); 
       else setUploadingFavicon(false); 
     }
   }
 
+  // Handle live color preview updates
+  const handleColorChange = (colorType: 'primaryColor' | 'secondaryColor', value: string) => {
+    setFormData(prev => ({ ...prev, [colorType]: value }));
+    setSettingsLocal({ [colorType]: value });
+  };
+
+  const handleThemeChange = (value: string) => {
+    const theme = value as "light" | "dark";
+    setFormData(prev => ({ ...prev, theme }));
+    setSettingsLocal({ theme });
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span className="text-lg">Loading settings...</span>
+      <div className="space-y-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <span className="size-8 rounded-md bg-muted grid place-items-center animate-pulse"><Icons.gear className="w-4 h-4"/></span>
+              <div>
+                <CardTitle className="text-lg">Settings</CardTitle>
+                <CardDescription>Memuat pengaturan...</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+        <div className="flex items-center justify-center min-h-96">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin brand-primary" />
+            <span className="text-lg">Loading settings...</span>
+          </div>
         </div>
       </div>
     );
@@ -138,7 +187,7 @@ export default function SettingsPage(){
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <span className="size-8 rounded-md bg-muted grid place-items-center"><Icons.gear className="w-4 h-4"/></span>
+            <span className="size-8 rounded-md bg-brand-soft grid place-items-center"><Icons.gear className="w-4 h-4 brand-primary"/></span>
             <div>
               <CardTitle className="text-lg">Settings</CardTitle>
               <CardDescription>Konfigurasi dasar toko + Brand & Tema</CardDescription>
@@ -159,6 +208,12 @@ export default function SettingsPage(){
                 placeholder="Nama Toko" 
                 value={formData.storeName} 
                 onChange={(e)=>setFormData({...formData, storeName: e.target.value})}
+                disabled={saving}
+              />
+              <Input 
+                placeholder="Deskripsi Toko"
+                value={formData.storeDescription} 
+                onChange={(e)=>setFormData({...formData, storeDescription: e.target.value})}
                 disabled={saving}
               />
               <Input 
@@ -253,7 +308,7 @@ export default function SettingsPage(){
                       <Input 
                         type="color" 
                         value={formData.primaryColor} 
-                        onChange={(e)=>setFormData({...formData, primaryColor: e.target.value})}
+                        onChange={(e)=>handleColorChange('primaryColor', e.target.value)}
                         disabled={saving}
                         className="h-10 cursor-pointer"
                       />
@@ -263,7 +318,7 @@ export default function SettingsPage(){
                       <Input 
                         type="color" 
                         value={formData.secondaryColor} 
-                        onChange={(e)=>setFormData({...formData, secondaryColor: e.target.value})}
+                        onChange={(e)=>handleColorChange('secondaryColor', e.target.value)}
                         disabled={saving}
                         className="h-10 cursor-pointer"
                       />
@@ -273,7 +328,7 @@ export default function SettingsPage(){
                     <label className="text-sm font-medium">Tema default</label>
                     <Select 
                       value={formData.theme} 
-                      onValueChange={(v)=>setFormData({...formData, theme: v as "light" | "dark"})}
+                      onValueChange={handleThemeChange}
                       disabled={saving}
                     >
                       <SelectTrigger><SelectValue placeholder="Tema default"/></SelectTrigger>
@@ -298,12 +353,12 @@ export default function SettingsPage(){
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <span className="size-6 rounded" style={{ background: formData.primaryColor }} />
-                      <span className="size-6 rounded" style={{ background: formData.secondaryColor }} />
+                      <span className="size-6 rounded border" style={{ background: formData.primaryColor }} />
+                      <span className="size-6 rounded border" style={{ background: formData.secondaryColor }} />
                     </div>
                     <div className="ml-auto flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">Favicon</span>
-                      <div className="size-6 rounded overflow-hidden bg-muted grid place-items-center">
+                      <div className="size-6 rounded overflow-hidden bg-muted grid place-items-center border">
                         {formData.faviconUrl ? (
                           <img src={formData.faviconUrl} alt="favicon" className="max-h-6" />
                         ) : (
@@ -323,7 +378,7 @@ export default function SettingsPage(){
           <Button 
             type="submit" 
             disabled={saving || uploadingLogo || uploadingFavicon} 
-            className="ml-auto"
+            className="ml-auto bg-brand-primary hover:bg-brand-primary/90"
           >
             {saving ? (
               <span className="flex items-center gap-2">
