@@ -18,6 +18,7 @@ export default function TransactionExportButton({
   const [exporting, setExporting] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [resellers, setResellers] = useState<Reseller[]>([]);
+  const [message, setMessage] = useState<string | null>(null);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -47,35 +48,34 @@ export default function TransactionExportButton({
   };
 
   const handleExport = async () => {
-    setExporting(true);
-    setShowOptions(false);
-
     try {
+      setMessage(null);
+      setExporting(true);
+
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== "all") {
-          params.append(key, value);
-        }
+        if (value && value !== "all") params.append(key, value);
       });
 
-      console.log("🚀 Starting transaction export with filters:", filters);
+      // Fallback: buka tab baru jika fetch gagal download blob
+      const downloadViaNavigation = () => {
+        const url = `/api/transactions/export?${params.toString()}`;
+        window.open(url, "_blank");
+      };
 
-      const response = await fetch(`/api/transactions/export?${params}`);
+      const response = await fetch(`/api/transactions/export?${params.toString()}`);
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Export failed: ${response.status} ${error}`);
+        setMessage(`Export gagal: ${response.status}`);
+        downloadViaNavigation();
+        return;
       }
 
-      // Get filename from response headers
       const contentDisposition = response.headers.get("content-disposition");
       const filename =
         contentDisposition?.match(/filename="(.+)"/)?.[1] ||
         `transactions_export_${Date.now()}.${filters.format}`;
 
-      console.log("📄 Downloading file:", filename);
-
-      // Create blob and download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -87,24 +87,27 @@ export default function TransactionExportButton({
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
-      console.log("✅ Export completed successfully");
-      alert(`✅ File ${filename} berhasil didownload!`);
+      setMessage(`File ${filename} sedang diunduh`);
     } catch (error) {
-      console.error("💥 Export error:", error);
-      alert(
-        `❌ Gagal export data: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      setMessage("Terjadi kesalahan saat export. Membuka di tab baru...");
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== "all") params.append(key, value);
+      });
+      window.open(`/api/transactions/export?${params.toString()}`, "_blank");
     } finally {
       setExporting(false);
+      setShowOptions(false);
     }
   };
 
   return (
     <div className={`relative ${className}`}>
       <button
-        onClick={() => setShowOptions(!showOptions)}
+        onClick={() => {
+          setShowOptions((s) => !s);
+          setMessage(null);
+        }}
         disabled={exporting}
         className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold disabled:bg-gray-400 flex items-center gap-2 transition-all"
       >
@@ -117,6 +120,12 @@ export default function TransactionExportButton({
           <>📊 Export Transaksi</>
         )}
       </button>
+
+      {message && (
+        <div className="mt-2 text-xs text-gray-700 bg-gray-100 rounded px-2 py-1 inline-block">
+          {message}
+        </div>
+      )}
 
       {showOptions && !exporting && (
         <div className="absolute top-12 right-0 bg-white rounded-lg shadow-xl border z-50 min-w-96">
@@ -250,7 +259,6 @@ export default function TransactionExportButton({
         </div>
       )}
 
-      {/* Backdrop */}
       {showOptions && (
         <div
           className="fixed inset-0 z-40"
