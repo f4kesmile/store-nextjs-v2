@@ -10,10 +10,12 @@ interface Reseller {
 
 interface TransactionExportButtonProps {
   className?: string;
+  forceOpen?: boolean;
 }
 
 export default function TransactionExportButton({
   className = "",
+  forceOpen = false,
 }: TransactionExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -30,13 +32,14 @@ export default function TransactionExportButton({
   });
 
   useEffect(() => {
-    if (showOptions) {
+    if (showOptions || forceOpen) {
       fetchResellers();
     }
-  }, [showOptions]);
+  }, [showOptions, forceOpen]);
 
   const fetchResellers = async () => {
     try {
+      console.info("export: fetch resellers");
       const res = await fetch("/api/resellers");
       if (res.ok) {
         const data = await res.json();
@@ -49,6 +52,7 @@ export default function TransactionExportButton({
 
   const handleExport = async () => {
     try {
+      console.info("export: start", filters);
       setMessage(null);
       setExporting(true);
 
@@ -57,17 +61,15 @@ export default function TransactionExportButton({
         if (value && value !== "all") params.append(key, value);
       });
 
-      // Fallback: buka tab baru jika fetch gagal download blob
-      const downloadViaNavigation = () => {
-        const url = `/api/transactions/export?${params.toString()}`;
-        window.open(url, "_blank");
-      };
+      const urlStr = `/api/transactions/export?${params.toString()}`;
+      console.info("export: GET", urlStr);
 
-      const response = await fetch(`/api/transactions/export?${params.toString()}`);
+      const response = await fetch(urlStr);
+      console.info("export: response", response.status);
 
       if (!response.ok) {
         setMessage(`Export gagal: ${response.status}`);
-        downloadViaNavigation();
+        window.open(urlStr, "_blank");
         return;
       }
 
@@ -89,6 +91,7 @@ export default function TransactionExportButton({
 
       setMessage(`File ${filename} sedang diunduh`);
     } catch (error) {
+      console.error("export: error", error);
       setMessage("Terjadi kesalahan saat export. Membuka di tab baru...");
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -105,6 +108,7 @@ export default function TransactionExportButton({
     <div className={`relative ${className}`}>
       <button
         onClick={() => {
+          console.info("export: toggle options");
           setShowOptions((s) => !s);
           setMessage(null);
         }}
@@ -127,7 +131,7 @@ export default function TransactionExportButton({
         </div>
       )}
 
-      {showOptions && !exporting && (
+      {(showOptions || forceOpen) && !exporting && (
         <div className="absolute top-12 right-0 bg-white rounded-lg shadow-xl border z-50 min-w-96">
           <div className="p-4 border-b bg-gradient-to-r from-emerald-50 to-green-50">
             <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -139,16 +143,11 @@ export default function TransactionExportButton({
           </div>
 
           <div className="p-4 space-y-4">
-            {/* Format Selection */}
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Format File
-              </label>
+              <label className="block text-sm font-medium mb-2">Format File</label>
               <select
                 value={filters.format}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, format: e.target.value }))
-                }
+                onChange={(e) => setFilters((prev) => ({ ...prev, format: e.target.value }))}
                 className="w-full border rounded-lg p-2"
               >
                 <option value="xlsx">📈 Excel (XLSX) - Recommended</option>
@@ -156,16 +155,11 @@ export default function TransactionExportButton({
               </select>
             </div>
 
-            {/* Status Filter */}
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Status Transaksi
-              </label>
+              <label className="block text-sm font-medium mb-2">Status Transaksi</label>
               <select
                 value={filters.status}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, status: e.target.value }))
-                }
+                onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
                 className="w-full border rounded-lg p-2"
               >
                 <option value="all">Semua Status</option>
@@ -175,69 +169,33 @@ export default function TransactionExportButton({
               </select>
             </div>
 
-            {/* Date Range */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Dari Tanggal
-                </label>
-                <input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      dateFrom: e.target.value,
-                    }))
-                  }
-                  className="w-full border rounded-lg p-2"
-                />
+                <label className="block text-sm font-medium mb-2">Dari Tanggal</label>
+                <input type="date" value={filters.dateFrom} onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))} className="w-full border rounded-lg p-2" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  Sampai Tanggal
-                </label>
-                <input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
-                  }
-                  className="w-full border rounded-lg p-2"
-                />
+                <label className="block text-sm font-medium mb-2">Sampai Tanggal</label>
+                <input type="date" value={filters.dateTo} onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))} className="w-full border rounded-lg p-2" />
               </div>
             </div>
 
-            {/* Reseller Filter */}
             <div>
               <label className="block text-sm font-medium mb-2">Reseller</label>
               <select
                 value={filters.resellerId}
-                onChange={(e) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    resellerId: e.target.value,
-                  }))
-                }
+                onChange={(e) => setFilters((prev) => ({ ...prev, resellerId: e.target.value }))}
                 className="w-full border rounded-lg p-2"
               >
                 <option value="all">Semua Reseller & Direct</option>
                 <option value="direct">Direct Sales Only</option>
                 {resellers.map((reseller) => (
-                  <option key={reseller.id} value={reseller.id.toString()}>
-                    {reseller.name}
-                  </option>
+                  <option key={reseller.id} value={reseller.id.toString()}>{reseller.name}</option>
                 ))}
               </select>
             </div>
 
-            {/* Export Button */}
-            <button
-              onClick={handleExport}
-              className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 font-bold transition-all"
-            >
-              📊 Export Data
-            </button>
+            <button onClick={handleExport} className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 font-bold transition-all">📊 Export Data</button>
           </div>
 
           <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 text-xs text-gray-600 rounded-b-lg border-t">
@@ -250,21 +208,11 @@ export default function TransactionExportButton({
             </ul>
           </div>
 
-          <button
-            onClick={() => setShowOptions(false)}
-            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100"
-          >
-            ✕
-          </button>
+          <button onClick={() => setShowOptions(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
         </div>
       )}
 
-      {showOptions && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowOptions(false)}
-        />
-      )}
+      {(showOptions || forceOpen) && <div className="fixed inset-0 z-40" onClick={() => setShowOptions(false)} />}
     </div>
   );
 }
