@@ -92,7 +92,7 @@ function CheckoutContent() {
       const orderData = {
         ...formData,
         items: cart,
-        totalAmount: getCartTotal(),
+        totalAmount: Number(getCartTotal()),
         totalItems: getCartCount(),
         resellerId: reseller?.id,
         resellerRef: resellerRef
@@ -116,9 +116,8 @@ function CheckoutContent() {
           variant: "success" 
         });
         
-        // Redirect to success page or WhatsApp
         if (reseller?.whatsappNumber) {
-          const message = `Halo ${reseller.name}, saya ingin melanjutkan pesanan #${result.orderId}. Total: Rp ${getCartTotal().toLocaleString('id-ID')}`;
+          const message = `Halo ${reseller.name}, saya ingin melanjutkan pesanan #${result.orderId}. Total: Rp ${Number(getCartTotal()).toLocaleString('id-ID')}`;
           window.open(`https://wa.me/${reseller.whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
         }
         
@@ -370,9 +369,9 @@ function CheckoutContent() {
                             </Badge>
                           )}
                           <div className="flex justify-between items-center mt-1 sm:mt-2">
-                            <span className="text-xs sm:text-sm text-gray-600">x{item.quantity}</span>
+                            <span className="text-xs sm:text-sm text-gray-600">x{Number(item.quantity)}</span>
                             <span className="font-semibold text-xs sm:text-sm">
-                              Rp {(item.productPrice * item.quantity).toLocaleString("id-ID")}
+                              Rp {(Number(item.productPrice) * Number(item.quantity)).toLocaleString("id-ID")}
                             </span>
                           </div>
                         </div>
@@ -386,13 +385,12 @@ function CheckoutContent() {
                   <div className="space-y-2 sm:space-y-3">
                     <div className="flex justify-between text-sm sm:text-base">
                       <span className="text-gray-600">Subtotal ({getCartCount()} item):</span>
-                      <span className="font-semibold">Rp {getCartTotal().toLocaleString("id-ID")}</span>
+                      <span className="font-semibold">Rp {Number(getCartTotal()).toLocaleString("id-ID")}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Biaya Admin:</span>
                       <span className="font-medium text-green-600">Gratis</span>
                     </div>
-                    {/* Digital Product Info */}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3">
                       <div className="flex items-center gap-2">
                         <Download className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
@@ -408,11 +406,10 @@ function CheckoutContent() {
                   <div className="flex justify-between items-center py-2">
                     <span className="text-lg sm:text-xl font-bold">Total:</span>
                     <span className="text-2xl sm:text-3xl font-bold text-brand-primary">
-                      Rp {getCartTotal().toLocaleString("id-ID")}
+                      Rp {Number(getCartTotal()).toLocaleString("id-ID")}
                     </span>
                   </div>
                   
-                  {/* Security Badge */}
                   <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
@@ -425,7 +422,6 @@ function CheckoutContent() {
                 </CardContent>
               </Card>
               
-              {/* Trust Indicators */}
               <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-0 shadow-lg block lg:hidden">
                 <CardContent className="p-3 sm:p-4">
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs">
