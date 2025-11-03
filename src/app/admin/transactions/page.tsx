@@ -13,7 +13,6 @@ import { formatDate } from "@/lib/utils";
 import {
   DollarSign,
   Search,
-  Download,
   Eye,
   Clock,
   CheckCircle,
@@ -22,6 +21,7 @@ import {
   RefreshCw,
   ArrowRight
 } from "lucide-react";
+import TransactionExportButton from "@/components/TransactionExportButton";
 
 interface Order {
   id: string;
@@ -115,15 +115,13 @@ export default function TransactionsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <Button variant="outline" size="sm" onClick={fetchOrders} disabled={loading}>
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
+              {/* Export button wired to real component */}
+              <TransactionExportButton />
             </div>
           </div>
         </CardHeader>
@@ -170,7 +168,7 @@ export default function TransactionsPage() {
                         <TableCell>
                           <Button asChild variant="outline" size="sm">
                             <Link href={`/admin/transactions/${order.id}`}> 
-                              <Eye className="w-4 h-4 mr-2" /> Detail
+                              Lihat
                             </Link>
                           </Button>
                         </TableCell>
