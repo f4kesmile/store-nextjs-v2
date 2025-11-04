@@ -1,4 +1,4 @@
-// src/app/api/transactions/export/route.ts (styled workbook)
+// src/app/api/transactions/export/route.ts (add Source column)
 export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
@@ -29,12 +29,14 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
+    // CSV
     if (format === 'csv') {
       const lines: string[] = [];
-      const headers = ['Order ID','Tanggal','Customer','Items','Total','Status','Reseller'];
+      const headers = ['Order ID','Tanggal','Customer','Items','Total','Status','Sumber'];
       lines.push(headers.join(','));
       for (const o of orders) {
         const itemsText = o.items.map(i => `${i.product.name}${i.variant ? ` (${i.variant.name}: ${i.variant.value})` : ''} x${i.quantity}`).join(' | ');
+        const source = o.reseller?.name ? `Reseller: ${o.reseller.name}` : 'Direct';
         const row = [
           o.id,
           `"${o.createdAt.toLocaleString('id-ID')}"`,
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
           `"${itemsText.replace(/"/g,'""')}"`,
           Number(o.totalAmount),
           o.status,
-          o.reseller ? `"${o.reseller.name.replace(/"/g,'""')}"` : 'Direct'
+          `"${source.replace(/"/g,'""')}"`
         ];
         lines.push(row.join(','));
       }
@@ -50,16 +52,12 @@ export async function GET(request: NextRequest) {
       return new Response(lines.join('\n'),{ status:200, headers:{ 'Content-Disposition':`attachment; filename="${filename}"`, 'Content-Type':'text/csv; charset=utf-8' } });
     }
 
+    // XLSX
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Devlog Store';
     wb.created = new Date();
 
-    const ws = wb.addWorksheet('Orders', {
-      views: [{ state: 'frozen', ySplit: 1 }],
-      properties: { defaultRowHeight: 20 },
-    });
-
-    // Header row with branding color
+    const ws = wb.addWorksheet('Orders', { views: [{ state: 'frozen', ySplit: 1 }], properties: { defaultRowHeight: 20 } });
     ws.columns = [
       { header:'Order ID', key:'id', width:24 },
       { header:'Tanggal', key:'date', width:20 },
@@ -67,50 +65,48 @@ export async function GET(request: NextRequest) {
       { header:'Items', key:'items', width:60 },
       { header:'Total', key:'total', width:16, style:{ numFmt:'"Rp " #,##0' } },
       { header:'Status', key:'status', width:14 },
-      { header:'Reseller', key:'reseller', width:22 },
+      { header:'Sumber', key:'source', width:24 },
     ];
 
-    // Add rows
     for (const o of orders) {
       const itemsText = o.items.map(i => `${i.product.name}${i.variant ? ` (${i.variant.name}: ${i.variant.value})` : ''} x${i.quantity}`).join(' | ');
-      ws.addRow({ id:o.id, date:o.createdAt.toLocaleString('id-ID'), customer:o.customerName, items:itemsText, total:Number(o.totalAmount), status:o.status, reseller: o.reseller?.name || 'Direct' });
+      const source = o.reseller?.name ? `Reseller: ${o.reseller.name}` : 'Direct';
+      ws.addRow({ id:o.id, date:o.createdAt.toLocaleString('id-ID'), customer:o.customerName, items:itemsText, total:Number(o.totalAmount), status:o.status, source });
     }
 
-    // Style header
     const header = ws.getRow(1);
     header.font = { bold:true, color:{ argb:'FFFFFFFF' } } as any;
     header.alignment = { vertical:'middle', horizontal:'center' } as any;
-    header.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'2563EB' } } as any; // blue-600
+    header.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'2563EB' } } as any;
 
-    // Borders & zebra striping
     ws.eachRow((row, rowNumber) => {
       row.eachCell((cell) => {
         cell.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} } as any;
         if (rowNumber % 2 === 0 && rowNumber !== 1) {
-          cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'F8FAFC' } } as any; // slate-50
+          cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'F8FAFC' } } as any;
         }
       });
       if (rowNumber !== 1) row.alignment = { vertical:'middle' } as any;
     });
 
-    // Status chip coloring
+    // Status highlight
     for (let r = 2; r <= ws.rowCount; r++){
-      const c = ws.getCell(`F${r}`); // status column
+      const c = ws.getCell(`F${r}`);
       const v = String(c.value || '').toUpperCase();
       if (v === 'COMPLETED') c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'DCFCE7' } } as any;
       if (v === 'PENDING') c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FEF9C3' } } as any;
       if (v === 'CANCELLED') c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FEE2E2' } } as any;
     }
 
-    // Auto filter and table style
     ws.autoFilter = { from: { row:1, column:1 }, to: { row: ws.rowCount, column: ws.columnCount } } as any;
 
-    // Summary sheet
     const sum = wb.addWorksheet('Ringkasan');
-    sum.columns = [ { header:'Metrik', key:'m', width:28 }, { header:'Nilai', key:'v', width:20 } ];
+    sum.columns = [ { header:'Metrik', key:'m', width:28 }, { header:'Nilai', key:'v', width:24 } ];
     sum.addRows([
       { m:'Total Orders', v: orders.length },
       { m:'Total Revenue', v: { formula:`SUM(Orders!E2:E${ws.rowCount})` } },
+      { m:'Direct Sales', v: orders.filter(o=>!o.resellerId).length },
+      { m:'Reseller Sales', v: orders.filter(o=>o.resellerId).length },
     ]);
     sum.getRow(1).font = { bold:true } as any; sum.getColumn(2).numFmt = '"Rp " #,##0';
 
