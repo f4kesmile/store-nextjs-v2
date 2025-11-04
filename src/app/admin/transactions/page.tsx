@@ -32,6 +32,7 @@ interface Order {
   totalItems: number;
   status: 'pending' | 'confirmed' | 'processing' | 'completed' | 'cancelled' | 'refunded';
   createdAt: string;
+  reseller?: { name: string } | null;
 }
 
 interface OrdersResponse {
@@ -120,72 +121,63 @@ export default function TransactionsPage() {
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              {/* Export button wired to real component */}
               <TransactionExportButton />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          ) : filtered.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead>Sumber</TableHead>
+                  <TableHead>Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.length > 0 ? filtered.map((order) => {
+                  const statusInfo = getStatusBadge(order.status);
+                  const StatusIcon = statusInfo.icon;
+                  const source = order.reseller?.name ? `Reseller: ${order.reseller.name}` : 'Direct';
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell><div className="font-mono text-sm">{order.id}</div></TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium text-sm">{order.customerName}</div>
+                          <div className="text-xs text-gray-500">{order.customerEmail}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell><div className="text-sm">{order.totalItems} item</div></TableCell>
+                      <TableCell><div className="font-semibold text-primary">Rp {order.totalAmount.toLocaleString('id-ID')}</div></TableCell>
+                      <TableCell>
+                        <Badge variant={statusInfo.variant} className="flex items-center gap-1 w-fit">
+                          <StatusIcon className="w-3 h-3" />{statusInfo.text}
+                        </Badge>
+                      </TableCell>
+                      <TableCell><div className="text-sm text-gray-600">{formatDate(order.createdAt)}</div></TableCell>
+                      <TableCell><div className="text-sm">{source}</div></TableCell>
+                      <TableCell>
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/admin/transactions/${order.id}`}>Lihat</Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                }) : (
                   <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Action</TableHead>
+                    <TableCell colSpan={8} className="text-center text-gray-500 py-10">Belum ada transaksi</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((order) => {
-                    const statusInfo = getStatusBadge(order.status);
-                    const StatusIcon = statusInfo.icon;
-                    return (
-                      <TableRow key={order.id}>
-                        <TableCell><div className="font-mono text-sm">{order.id}</div></TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-medium text-sm">{order.customerName}</div>
-                            <div className="text-xs text-gray-500">{order.customerEmail}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell><div className="text-sm">{order.totalItems} item</div></TableCell>
-                        <TableCell><div className="font-semibold text-primary">Rp {order.totalAmount.toLocaleString('id-ID')}</div></TableCell>
-                        <TableCell>
-                          <Badge variant={statusInfo.variant} className="flex items-center gap-1 w-fit">
-                            <StatusIcon className="w-3 h-3" />{statusInfo.text}
-                          </Badge>
-                        </TableCell>
-                        <TableCell><div className="text-sm text-gray-600">{formatDate(order.createdAt)}</div></TableCell>
-                        <TableCell>
-                          <Button asChild variant="outline" size="sm">
-                            <Link href={`/admin/transactions/${order.id}`}> 
-                              Lihat
-                            </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <DollarSign className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">{searchTerm ? "Tidak ada pesanan yang cocok" : "Belum ada transaksi"}</h3>
-              <p className="text-gray-500 mb-6">{searchTerm ? "Coba kata kunci yang berbeda" : "Transaksi akan muncul setelah customer melakukan checkout"}</p>
-              <Button asChild><Link href="/admin/products">Tambah Produk</Link></Button>
-            </div>
-          )}
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
