@@ -22,14 +22,41 @@ import {
   AlertCircle,
   Loader2,
   ArrowLeft,
+  CheckCircle,
 } from "lucide-react";
+
+interface Reseller {
+  id: number;
+  name: string;
+  uniqueId: string;
+  whatsappNumber: string;
+}
 
 function CartContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const resellerRef = searchParams.get("ref");
-  const { cart, updateQuantity, removeFromCart, getCartTotal, getCartCount } = useCart();
+  const { cart, updateQuantity, removeFromCart, getCartTotal, getCartCount, clearCart } = useCart();
   const { settings } = useSettings();
+  const [reseller, setReseller] = useState<Reseller | null>(null);
+
+  useEffect(() => {
+    if (resellerRef) {
+      fetchReseller(resellerRef);
+    }
+  }, [resellerRef]);
+
+  const fetchReseller = async (refId: string) => {
+    try {
+      const res = await fetch(`/api/resellers/validate?ref=${refId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReseller(data);
+      }
+    } catch (error) {
+      console.error("Reseller tidak ditemukan");
+    }
+  };
 
   const goToCheckout = () => {
     router.push(resellerRef ? `/checkout?ref=${resellerRef}` : "/checkout");
@@ -98,6 +125,20 @@ function CartContent() {
           />
         </div>
       </section>
+
+      {/* Reseller Banner */}
+      {reseller && (
+        <section className="py-3 sm:py-4 bg-gradient-to-r from-green-500 to-green-600 text-white">
+          <div className="container">
+            <div className="text-center space-y-2">
+              <p className="text-sm sm:text-lg font-bold flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                Pesanan via reseller: <span className="text-yellow-300">{reseller.name}</span>
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-8 sm:py-16 px-4">
         <div className="container">
