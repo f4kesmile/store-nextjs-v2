@@ -32,6 +32,15 @@ interface OrderData {
 export async function POST(req: NextRequest) {
   try {
     const orderData: OrderData = await req.json();
+
+    // NEW: normalize resellerId from resellerRef if provided
+    let resellerId: number | null = null;
+    if (orderData.resellerId) {
+      resellerId = Number(orderData.resellerId);
+    } else if (orderData.resellerRef) {
+      const r = await prisma.reseller.findUnique({ where: { uniqueId: orderData.resellerRef } });
+      resellerId = r?.id ?? null;
+    }
     
     // Validate required fields
     const requiredFields = ['customerName', 'customerEmail', 'customerPhone', 'customerAddress'];
@@ -44,7 +53,6 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(orderData.customerEmail)) {
       return NextResponse.json(
@@ -53,7 +61,6 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Validate items
     if (!orderData.items || orderData.items.length === 0) {
       return NextResponse.json(
         { error: "Keranjang kosong" },
@@ -61,9 +68,8 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Validate products and calculate total
     let calculatedTotal = 0;
-    const validatedItems = [];
+    const validatedItems = [] as Array<{productId:number; variantId:number|null; quantity:number; unitPrice:number; totalPrice:number; notes:string|null}>;
     
     for (const item of orderData.items) {
       const price = typeof item.productPrice === 'string' ? 
@@ -77,12 +83,7 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      // Verify product exists
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-        include: { variants: true }
-      });
-      
+      const product = await prisma.product.findUnique({ where: { id: item.productId }, include: { variants: true } });
       if (!product) {
         return NextResponse.json(
           { error: `Produk ${item.productName} tidak ditemukan` },
@@ -90,7 +91,6 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      // Check stock
       const availableStock = item.variantId 
         ? product.variants.find(v => v.id === item.variantId)?.stock || 0
         : product.stock;
@@ -102,30 +102,20 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      const itemTotal = price * item.quantity;
+      const itemTotal = Number(price) * item.quantity;
       calculatedTotal += itemTotal;
       
       validatedItems.push({
         productId: item.productId,
         variantId: item.variantId || null,
         quantity: item.quantity,
-        unitPrice: price,
+        unitPrice: Number(price),
         totalPrice: itemTotal,
         notes: item.notes || null
       });
     }
     
-    // Find reseller if ref provided
-    let reseller = null;
-    if (orderData.resellerRef) {
-      reseller = await prisma.reseller.findUnique({
-        where: { uniqueId: orderData.resellerRef }
-      });
-    }
-    
-    // Create order with items in a transaction
     const createdOrder = await prisma.$transaction(async (tx) => {
-      // Create the order
       const order = await tx.order.create({
         data: {
           customerName: orderData.customerName,
@@ -137,11 +127,10 @@ export async function POST(req: NextRequest) {
           totalAmount: calculatedTotal,
           totalItems: orderData.totalItems,
           status: 'PENDING',
-          resellerId: reseller?.id || null
+          resellerId: resellerId, // normalized reseller id
         }
       });
       
-      // Create order items
       await tx.orderItem.createMany({
         data: validatedItems.map(item => ({
           orderId: order.id,
@@ -154,88 +143,32 @@ export async function POST(req: NextRequest) {
         }))
       });
       
-      // Update product/variant stock
+      // Update stocks
       for (const item of validatedItems) {
         if (item.variantId) {
-          await tx.variant.update({
-            where: { id: item.variantId },
-            data: { stock: { decrement: item.quantity } }
-          });
+          await tx.variant.update({ where: { id: item.variantId }, data: { stock: { decrement: item.quantity } } });
         } else {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { decrement: item.quantity } }
-          });
+          await tx.product.update({ where: { id: item.productId }, data: { stock: { decrement: item.quantity } } });
         }
       }
       
-      // Log activity
       await tx.activityLog.create({
         data: {
-          userId: null, // Customer order, no admin user
+          userId: null,
           type: 'order_created',
           title: `Pesanan Baru #${order.id}`,
           description: `${orderData.customerName} membuat pesanan senilai Rp ${calculatedTotal.toLocaleString('id-ID')} dengan ${orderData.totalItems} item`,
           action: `New order created: ${order.id}`,
-          metadata: {
-            orderId: order.id,
-            customerName: orderData.customerName,
-            customerEmail: orderData.customerEmail,
-            totalAmount: calculatedTotal,
-            totalItems: orderData.totalItems,
-            resellerRef: orderData.resellerRef || null,
-            items: orderData.items.length
-          }
+          metadata: { resellerRef: orderData.resellerRef || null, resellerId }
         }
       });
       
       return order;
     });
-    
-    console.log('New order created in database:', {
-      orderId: createdOrder.id,
-      customer: orderData.customerName,
-      total: calculatedTotal,
-      items: orderData.totalItems
-    });
-    
-    return NextResponse.json({
-      success: true,
-      orderId: createdOrder.id,
-      message: 'Pesanan berhasil dibuat',
-      order: {
-        id: createdOrder.id,
-        totalAmount: Number(createdOrder.totalAmount),
-        totalItems: createdOrder.totalItems,
-        status: createdOrder.status.toLowerCase()
-      }
-    }, { status: 201 });
-    
+
+    return NextResponse.json({ success:true, orderId: createdOrder.id },{ status:201 });
   } catch (error) {
     console.error('Order creation error:', error);
-    
-    // Log error activity if possible
-    try {
-      await prisma.activityLog.create({
-        data: {
-          userId: null,
-          type: 'error',
-          title: 'Error saat checkout',
-          description: 'Gagal membuat pesanan - sistem error',
-          action: `Checkout error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          metadata: {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            customerName: (await req.json().catch(() => ({})))?.customerName || 'Unknown'
-          }
-        }
-      });
-    } catch (logError) {
-      console.error('Failed to log error:', logError);
-    }
-    
-    return NextResponse.json(
-      { error: 'Gagal membuat pesanan. Silakan coba lagi.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Gagal membuat pesanan. Silakan coba lagi.' },{ status:500 });
   }
 }
