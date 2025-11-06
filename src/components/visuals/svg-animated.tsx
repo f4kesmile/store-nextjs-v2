@@ -1,0 +1,15 @@
+// Animated SVG assets for Home/Contact
+export const Wave = () => (
+  <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="w-full h-[80px] md:h-[120px]">
+    <path d="M0,64L48,80C96,96,192,128,288,133.3C384,139,480,117,576,96C672,75,768,53,864,69.3C960,85,1056,139,1152,160C1248,181,1344,171,1392,165.3L1440,160L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z" fill="currentColor" opacity="0.08" />
+  </svg>
+);
+
+export const FloatingBlob = () => (
+  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="w-24 h-24 text-primary/20 animate-[float_6s_ease-in-out_infinite]">
+    <path fill="currentColor" d="M41.8,-64.6C54.1,-56.1,64.1,-45.2,71.5,-32.3C79,-19.3,84,-4.2,82.8,10.7C81.6,25.6,74.3,40.3,63.1,51.9C51.9,63.6,36.8,72.3,20.7,77.1C4.6,81.9,-12.5,82.7,-28.6,77.6C-44.7,72.6,-59.8,61.6,-69.2,47.3C-78.6,33,-82.3,15.5,-82.2,-1C-82.2,-17.6,-78.5,-35.1,-68.9,-48.6C-59.3,-62.1,-43.9,-71.6,-28.2,-78.2C-12.5,-84.9,3.6,-88.7,18.3,-84.8C33,-80.9,46.5,-69.2,41.8,-64.6Z" transform="translate(100 100)" />
+  </svg>
+);
+
+// Simple keyframes in tailwind via globals.css
+// @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
