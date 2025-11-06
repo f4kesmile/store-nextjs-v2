@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Minus, Plus, Trash2 } from "lucide-react";
 
 export default function CartPage() {
   return (
@@ -88,16 +89,18 @@ function CartContent() {
                               <p className="text-xs text-muted-foreground">{item.variantName}: {item.variantValue}</p>
                             )}
                           </div>
-                          <Button variant="ghost" className="text-destructive" onClick={() => removeFromCart(item.productId, item.variantId)}>Hapus</Button>
+                          <Button variant="ghost" className="text-destructive" onClick={() => removeFromCart(item.productId, item.variantId)}>
+                            <Trash2 className="h-4 w-4"/>
+                          </Button>
                         </div>
 
                         <div className="mt-3 flex items-center gap-2">
-                          <Button size="icon" variant="outline" onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}>-</Button>
+                          <Button size="icon" variant="outline" onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}><Minus className="h-4 w-4"/></Button>
                           <Input value={item.quantity} onChange={(e)=>{
                             const v = parseInt(e.target.value)||1;
                             updateQuantity(item.productId, v, item.variantId);
                           }} className="w-16 text-center" />
-                          <Button size="icon" variant="outline" onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}>+</Button>
+                          <Button size="icon" variant="outline" onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}><Plus className="h-4 w-4"/></Button>
                           <span className="text-xs text-muted-foreground">Max: {item.maxStock}</span>
                         </div>
 
