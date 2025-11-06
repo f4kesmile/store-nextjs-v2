@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { CartProvider } from "@/contexts/CartContext";
+import { ResellerProvider } from "@/contexts/ResellerContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getServerSettings } from "@/lib/server-settings";
 import HeadFavicon from "@/components/HeadFavicon";
+import { Suspense } from "react";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getServerSettings();
@@ -26,7 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <Providers>
             <HeadFavicon />
-            <CartProvider>{children}</CartProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+              <ResellerProvider>
+                <CartProvider>{children}</CartProvider>
+              </ResellerProvider>
+            </Suspense>
           </Providers>
         </ThemeProvider>
       </body>
