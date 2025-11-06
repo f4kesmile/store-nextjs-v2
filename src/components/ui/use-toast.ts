@@ -12,8 +12,8 @@ import {
 
 export type ToastItem = {
   id: string;
-  title?: React.ReactNode;
-  description?: React.ReactNode;
+  title?: string;
+  description?: string;
 };
 
 let listeners: Array<(toasts: ToastItem[]) => void> = [];
@@ -21,16 +21,16 @@ let queue: ToastItem[] = [];
 
 export function toast(props: Omit<ToastItem, "id">) {
   const id = Math.random().toString(36).slice(2);
-  const item: ToastItem = { id, ...props };
+  const item: ToastItem = { id, title: props.title || "", description: props.description || "" };
   queue = [item, ...queue].slice(0, 3);
-  listeners.forEach((l) => l(queue));
+  for (const l of listeners) l(queue);
   setTimeout(() => dismiss(id), 5000);
   return { id };
 }
 
 export function dismiss(id?: string) {
   queue = id ? queue.filter((t) => t.id !== id) : [];
-  listeners.forEach((l) => l(queue));
+  for (const l of listeners) l(queue);
 }
 
 export function Toaster() {
@@ -44,10 +44,10 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(({ id, title, description }) => (
-        <Toast key={id}>
-          {title && <ToastTitle>{title}</ToastTitle>}
-          {description && <ToastDescription>{description}</ToastDescription>}
+      {toasts.map((t) => (
+        <Toast key={t.id}>
+          {t.title ? <ToastTitle>{t.title}</ToastTitle> : null}
+          {t.description ? <ToastDescription>{t.description}</ToastDescription> : null}
           <ToastClose />
         </Toast>
       ))}
