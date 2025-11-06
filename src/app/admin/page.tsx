@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Eye, AlertTriangle, Wallet, PlusCircle, Users, ReceiptText, Settings, ChevronRight } from "lucide-react";
+import { Package, Eye, AlertTriangle, Wallet, PlusCircle, Users, Receipt, Settings, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { formatDate, formatPrice } from "@/lib/utils";
 
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-4 gap-3">
-              {[{href:"/admin/products/new",t:"Tambah Produk",i:PlusCircle,s:"Kelola inventory"},{href:"/admin/resellers",t:"Kelola Reseller",i:Users,s:"Manage partners"},{href:"/admin/orders",t:"Lihat Transaksi",i:ReceiptText,s:"Monitor sales"},{href:"/admin/settings",t:"Pengaturan",i:Settings,s:"Store settings"}].map((a)=>{
+              {[{href:"/admin/products/new",t:"Tambah Produk",i:PlusCircle,s:"Kelola inventory"},{href:"/admin/resellers",t:"Kelola Reseller",i:Users,s:"Manage partners"},{href:"/admin/orders",t:"Lihat Transaksi",i:Receipt,s:"Monitor sales"},{href:"/admin/settings",t:"Pengaturan",i:Settings,s:"Store settings"}].map((a)=>{
                 const Icon = a.i as any;
                 return (
                   <Link key={a.t} href={a.href} className="group rounded-md border p-4 hover:bg-muted transition">
