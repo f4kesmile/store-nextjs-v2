@@ -9,10 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FloatingBlob, Wave } from "@/components/visuals/svg-animated";
 import { revealOnScroll } from "@/lib/anim";
 
-interface Settings {
-  storeName: string;
-  storeDescription: string;
-}
+interface Settings { storeName: string; storeDescription: string; }
 
 export default function HomePage() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -37,49 +34,52 @@ export default function HomePage() {
 
       {/* Hero with SVGs */}
       <section className="relative overflow-hidden">
-        <div className="container mx-auto px-4 pt-16 pb-10 text-center">
-          <div className="absolute -top-10 -left-10">
+        <div className="container mx-auto px-4 py-16 md:py-20">
+          {/* decorative SVGs */}
+          <div className="pointer-events-none select-none absolute -top-10 -left-10 z-0">
             <FloatingBlob />
           </div>
-          <div className="absolute -bottom-12 -right-12 rotate-12">
+          <div className="pointer-events-none select-none absolute -bottom-12 -right-12 rotate-12 z-0">
             <FloatingBlob />
           </div>
 
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-72 mx-auto" />
-              <Skeleton className="h-6 w-[36rem] max-w-full mx-auto" />
-              <div className="flex items-center justify-center gap-3">
-                <Skeleton className="h-10 w-36" />
-                <Skeleton className="h-10 w-36" />
+          {/* content */}
+          <div className="relative z-10 text-center" data-reveal>
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-72 mx-auto" />
+                <Skeleton className="h-6 w-[36rem] max-w-full mx-auto" />
+                <div className="flex items-center justify-center gap-3">
+                  <Skeleton className="h-10 w-36" />
+                  <Skeleton className="h-10 w-36" />
+                </div>
               </div>
-            </div>
-          ) : (
-            <div data-reveal>
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-                Selamat Datang di {" "}
-                <span className="text-primary">{settings?.storeName || "Store Saya"}</span>
-              </h1>
-              <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-                {settings?.storeDescription || "Platform digital terpercaya untuk kebutuhan produk premium dan layanan sosial media."}
-              </p>
-              <div className="flex justify-center gap-3">
-                <Button asChild>
-                  <Link href="/products">🛍️ Belanja Sekarang</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/contact">📞 Hubungi Kami</Link>
-                </Button>
-              </div>
-            </div>
-          )}
+            ) : (
+              <>
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+                  Selamat Datang di <span className="text-primary">{settings?.storeName || "Store Saya"}</span>
+                </h1>
+                <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
+                  {settings?.storeDescription || "Platform digital terpercaya untuk produk premium dan layanan sosial media."}
+                </p>
+                <div className="flex justify-center gap-3">
+                  <Button asChild>
+                    <Link href="/products">🛍️ Belanja Sekarang</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/contact">📞 Hubungi Kami</Link>
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-        <div className="text-primary/60">
+        <div className="relative z-0 text-primary/60 pointer-events-none select-none">
           <Wave />
         </div>
       </section>
 
-      {/* Features with reveal */}
+      {/* Features */}
       <section className="container mx-auto px-4 py-10">
         <div className="grid md:grid-cols-3 gap-6">
           {[{t:"🚀 Cepat & Aman",d:"Transaksi cepat dengan sistem keamanan terpercaya"},{t:"💎 Produk Premium",d:"Koleksi produk digital berkualitas tinggi"},{t:"🤝 Support 24/7",d:"Tim support siap membantu kapan saja"}].map((f,i)=>(

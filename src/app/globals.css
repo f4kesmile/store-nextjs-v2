@@ -52,3 +52,6 @@
 /* Keyframes and utilities */
 @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
 [data-reveal] { opacity: 0; transform: translateY(8px); transition: opacity .4s ease, transform .4s ease; }
+
+/* Decorations */
+.svg-decor { pointer-events: none; user-select: none; }
