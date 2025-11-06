@@ -174,7 +174,7 @@ const ProductsPage: React.FC = () => {
       key: 'actions',
       label: 'Actions',
       className: 'w-12',
-      render: (_, product: Product) => (
+      render: (_: unknown, product: Product) => (
         <ActionDropdown
           actions={createCommonActions.crud(
             () => handleViewProduct(product),
@@ -264,7 +264,7 @@ const ProductsPage: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select defaultValue={selectedProduct?.category || ''}>
+                <Select value={selectedProduct?.category || ''} onValueChange={() => {}}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -279,7 +279,7 @@ const ProductsPage: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select defaultValue={selectedProduct?.status || 'active'}>
+                <Select value={selectedProduct?.status || 'active'} onValueChange={() => {}}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
