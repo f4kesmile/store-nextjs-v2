@@ -1,57 +1,51 @@
-/* Tailwind layers */
+/* Tailwind dark mode and design tokens for admin */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Theme variables (can be overridden dynamically from Settings) */
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 47.4% 11.2%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222.2 84% 4.9%;
-  --radius: 0.5rem;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: 222.2 84% 4.9%;
+    --background: 18 14% 6%;
     --foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --card: 20 14% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 20 14% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 220 70% 55%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 12 6% 20%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --muted: 20 14% 18%;
+    --muted-foreground: 217 12% 62%;
+    --accent: 220 14% 18%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 220 70% 55%;
+
+    --radius: 0.6rem;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  html {
+    @apply dark;
+  }
+
+  body {
+    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
   }
 }
 
-/* Base body styles */
-@layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+/* Compact table and form spacing for simpler look */
+@layer components {
+  .admin-container { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .admin-section { @apply bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-xl; }
+  .admin-section-header { @apply px-4 sm:px-6 py-4 border-b border-[hsl(var(--border))] flex items-center justify-between; }
+  .admin-section-content { @apply p-4 sm:p-6; }
+  .admin-grid { @apply grid gap-4 sm:gap-5; }
 }
-
-/* Keyframes and utilities */
-@keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
-[data-reveal] { opacity: 0; transform: translateY(8px); transition: opacity .4s ease, transform .4s ease; }
-
-/* Decorations */
-.svg-decor { pointer-events: none; user-select: none; }
