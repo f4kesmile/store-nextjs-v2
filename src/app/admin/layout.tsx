@@ -2,6 +2,7 @@
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
+import { useSidebarPersistence } from "@/hooks/useSidebarPersistence";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }){
   useEffect(() => {
@@ -15,13 +16,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  useSidebarPersistence("admin_sidebar_collapsed", collapsed, setCollapsed);
 
   return (
     <div className="min-h-screen flex">
-      {/* Desktop sidebar */}
       <AdminSidebar collapsed={collapsed} onToggle={()=> setCollapsed(v=>!v)} />
 
-      {/* Mobile sidebar overlay */}
       <div className={`fixed inset-0 z-50 md:hidden ${mobileOpen?"":"pointer-events-none"}`}>
         <div className={`absolute inset-0 bg-black/40 transition ${mobileOpen?"opacity-100":"opacity-0"}`} onClick={()=>setMobileOpen(false)} />
         <div className={`absolute left-0 top-0 h-full w-72 admin-sidebar border-r bg-card transition-transform ${mobileOpen?"translate-x-0":"-translate-x-full"}`}>
