@@ -1,17 +1,9 @@
-export const dynamic = "force-dynamic";
-
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AdminShell>
-      {children}
-    </AdminShell>
-  );
-}
-
 "use client";
+
+export const dynamic = "force-dynamic";
 import { useEffect } from "react";
 
-function AdminShell({ children }: { children: React.ReactNode }){
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
