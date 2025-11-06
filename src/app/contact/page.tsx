@@ -1,8 +1,12 @@
-// src/app/contact/page.tsx - GANTI SELURUH ISI
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SiteNavbar } from "@/components/site-navbar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Settings {
   storeName: string;
@@ -19,163 +23,121 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSettings();
+    (async () => {
+      try {
+        const res = await fetch("/api/settings");
+        const data = await res.json();
+        setSettings(data);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch("/api/settings");
-      const data = await res.json();
-      setSettings(data);
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-md">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-purple-600">
-            {settings?.storeName || "Store Saya"}
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="text-gray-700 hover:text-purple-600">
-              Beranda
-            </Link>
-            <Link
-              href="/products"
-              className="text-gray-700 hover:text-purple-600"
-            >
-              Produk
-            </Link>
-            <Link
-              href="/contact"
-              className="text-gray-700 hover:text-purple-600 font-bold"
-            >
-              Kontak
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background">
+      <SiteNavbar />
 
-      {/* Contact Section */}
-      <div className="container mx-auto px-4 py-12">
+      <section className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-center mb-4 text-gray-800">
-            Hubungi Kami
-          </h1>
-          <p className="text-center text-gray-600 mb-12">
-            Kami siap membantu Anda! Silakan hubungi kami melalui kontak di
-            bawah ini.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-center mb-2">Hubungi Kami</h1>
+          <p className="text-center text-muted-foreground mb-8">Kami siap membantu Anda kapan saja.</p>
 
-          <div className="grid md:grid-cols-2 gap-8 mb-12">
-            {/* Contact Info Cards */}
-            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">📧</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2 text-gray-800">
-                    Email
-                  </h3>
-                  <p className="text-gray-600 mb-3">
-                    Hubungi kami melalui email untuk pertanyaan umum.
-                  </p>
-                  <a
-                    href={`mailto:${settings?.supportEmail}`}
-                    className="text-blue-600 hover:text-blue-700 font-medium break-all"
-                  >
+          {/* Quick Contacts */}
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>📧 Email</CardTitle>
+              </CardHeader>
+              <CardContent className="text-muted-foreground">
+                {loading ? (
+                  <Skeleton className="h-5 w-48" />
+                ) : (
+                  <a href={`mailto:${settings?.supportEmail}`} className="text-primary underline">
                     {settings?.supportEmail}
                   </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">💬</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2 text-gray-800">
-                    WhatsApp
-                  </h3>
-                  <p className="text-gray-600 mb-3">
-                    Klik untuk memulai percakapan dengan kami.
-                  </p>
-                  <a
-                    href={`https://wa.me/${settings?.supportWhatsApp}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-green-600 hover:text-green-700 font-medium"
-                  >
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>💬 WhatsApp</CardTitle>
+              </CardHeader>
+              <CardContent className="text-muted-foreground">
+                {loading ? (
+                  <Skeleton className="h-5 w-40" />
+                ) : (
+                  <a href={`https://wa.me/${settings?.supportWhatsApp}`} target="_blank" rel="noopener noreferrer" className="text-primary underline">
                     {settings?.supportWhatsApp}
                   </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-8 hover:shadow-2xl transition-all md:col-span-2">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">📍</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2 text-gray-800">
-                    Lokasi
-                  </h3>
-                  <p className="text-gray-600 mb-3">Kantor kami berpusat di:</p>
-                  <p className="text-gray-800 font-medium">
-                    {settings?.storeLocation}
-                  </p>
-                </div>
-              </div>
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
+
+          {/* Contact Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Kirim Pesan</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form className="grid md:grid-cols-2 gap-4">
+                <div className="md:col-span-1">
+                  <label className="text-sm font-medium">Nama</label>
+                  <Input placeholder="Nama lengkap" />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input type="email" placeholder="email@example.com" />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="text-sm font-medium">No. WhatsApp</label>
+                  <Input placeholder="08xxxxxxxxxx" />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="text-sm font-medium">Subjek</label>
+                  <Input placeholder="Judul pesan" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium">Pesan</label>
+                  <textarea className="w-full border rounded-md p-3 min-h-[120px]" placeholder="Tulis pesan Anda..." />
+                </div>
+                <div className="md:col-span-2 flex justify-end gap-2">
+                  <Button type="button" variant="outline" asChild>
+                    <Link href="/products">← Lihat Produk</Link>
+                  </Button>
+                  <Button type="button">Kirim Pesan</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
           {/* About Section */}
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-xl shadow-2xl p-8 md:p-12">
-            <h2 className="text-3xl font-bold mb-4">
-              {settings?.aboutTitle || "Tentang Kami"}
-            </h2>
-            <p className="text-gray-300 text-lg leading-relaxed whitespace-pre-line">
-              {settings?.aboutDescription}
-            </p>
+          {settings?.aboutTitle && settings?.aboutDescription && (
+            <Card className="mt-8">
+              <CardHeader>
+                <CardTitle>{settings.aboutTitle}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-muted-foreground whitespace-pre-line">
+                {settings.aboutDescription}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </section>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-wrap gap-4 mt-8">
-              <Link
-                href="/products"
-                className="bg-purple-600 text-white px-8 py-3 rounded-lg hover:bg-purple-700 font-bold transition-all"
-              >
-                🛍️ Lihat Produk
-              </Link>
-              <a
-                href={`https://wa.me/${settings?.supportWhatsApp}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 font-bold transition-all"
-              >
-                💬 Chat WhatsApp
-              </a>
-            </div>
+      <footer className="border-t">
+        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+          <div className="mb-2 font-medium">{settings?.storeName || "Store Saya"}</div>
+          <div className="flex justify-center gap-2 flex-wrap">
+            {settings?.storeLocation && <span>📍 {settings.storeLocation}</span>}
+            {settings?.supportEmail && <span>• 📧 {settings.supportEmail}</span>}
+            {settings?.supportWhatsApp && <span>• 💬 {settings.supportWhatsApp}</span>}
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
