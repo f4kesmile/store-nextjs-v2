@@ -6,8 +6,6 @@ import { SiteNavbar } from "@/components/site-navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FloatingBlob, Wave } from "@/components/visuals/svg-animated";
-import { revealOnScroll } from "@/lib/anim";
 
 interface Settings { storeName: string; storeDescription: string; }
 
@@ -23,7 +21,6 @@ export default function HomePage() {
         setSettings(data);
       } finally {
         setLoading(false);
-        setTimeout(revealOnScroll, 0);
       }
     })();
   }, []);
@@ -32,15 +29,10 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       <SiteNavbar />
 
-      <section className="relative overflow-hidden">
-        <div className="container mx-auto px-4 py-16 md:py-20 min-h-[360px] md:min-h-[420px]">
-          <div className="pointer-events-none select-none absolute -top-10 -left-10 -z-10">
-            <FloatingBlob />
-          </div>
-          <div className="pointer-events-none select-none absolute -bottom-12 -right-12 rotate-12 -z-10">
-            <FloatingBlob />
-          </div>
-          <div className="relative z-10 text-center" data-reveal>
+      {/* Hero (tanpa SVG dekoratif) */}
+      <section>
+        <div className="container mx-auto px-4 py-16 md:py-20">
+          <div className="text-center">
             {loading ? (
               <div className="space-y-4">
                 <Skeleton className="h-10 w-72 mx-auto" />
@@ -70,15 +62,13 @@ export default function HomePage() {
             )}
           </div>
         </div>
-        <div className="relative -z-10 text-primary/60 pointer-events-none select-none">
-          <Wave />
-        </div>
       </section>
 
+      {/* Features */}
       <section className="container mx-auto px-4 py-10">
         <div className="grid md:grid-cols-3 gap-6">
-          {[{t:"🚀 Cepat & Aman",d:"Transaksi cepat dengan sistem keamanan terpercaya"},{t:"💎 Produk Premium",d:"Koleksi produk digital berkualitas tinggi"},{t:"🤝 Support 24/7",d:"Tim support siap membantu kapan saja"}].map((f,i)=>(
-            <Card key={i} data-reveal>
+          {[{t:"Keamanan",i:"shield",d:"Transaksi cepat dengan sistem keamanan terpercaya"},{t:"Premium",i:"gem",d:"Koleksi produk digital berkualitas tinggi"},{t:"Support",i:"handshake",d:"Tim support siap membantu kapan saja"}].map((f,i)=>(
+            <Card key={i}>
               <CardHeader>
                 <CardTitle>{f.t}</CardTitle>
               </CardHeader>
@@ -88,8 +78,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Stats */}
       <section className="container mx-auto px-4 pb-14">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-reveal>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[['Produk', '120+'], ['Pelanggan', '5K+'], ['Rating', '4.9'], ['Negara', '10+']].map(([k,v])=> (
             <Card key={k}>
               <CardContent className="p-6 text-center">
