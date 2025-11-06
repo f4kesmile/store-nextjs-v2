@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { ShoppingCart, Info, Plus, Minus, Trash2 } from "lucide-react";
 
 interface Variant { id: number; name: string; value: string; stock: number; }
 interface Product { id: number; name: string; description: string; iconUrl: string; price: number; stock: number; status: string; enableNotes: boolean; variants: Variant[]; }
@@ -59,7 +60,9 @@ function ProductsContent() {
 
       <section className="container mx-auto px-4 pt-6 pb-4">
         <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Produk Kami</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight inline-flex items-center gap-2">
+            <ShoppingCart className="h-6 w-6"/> Produk Kami
+          </h1>
           <div className="flex gap-2 items-center">
             <Input 
               placeholder="Cari produk..." 
@@ -78,7 +81,7 @@ function ProductsContent() {
               </SelectContent>
             </Select>
             <Button variant="outline" asChild>
-              <Link href="/cart">🛒 Keranjang ({getCartCount()})</Link>
+              <Link href="/cart">Keranjang ({getCartCount()})</Link>
             </Button>
           </div>
         </div>
@@ -115,7 +118,7 @@ function ProductsContent() {
                     <div className="h-40 bg-muted/40 rounded-md flex items-center justify-center mb-3 overflow-hidden">
                       {product.iconUrl 
                         ? <img src={product.iconUrl} alt={product.name} className="max-h-36 object-contain" /> 
-                        : <span className="text-5xl">📦</span>}
+                        : <Info className="h-10 w-10 text-muted-foreground"/>}
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{product.description}</p>
                     {product.variants.length > 0 && (
