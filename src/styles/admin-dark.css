@@ -1,0 +1,36 @@
+/* Admin theme dark overrides */
+:root.admin-dark {
+  --background: 14 14% 10%;
+  --foreground: 0 0% 100%;
+  --card: 220 10% 12%;
+  --card-foreground: 0 0% 100%;
+  --muted: 220 7% 16%;
+  --muted-foreground: 220 10% 70%;
+  --border: 220 8% 22%;
+}
+
+/* Sidebar */
+.admin-dark .admin-sidebar {
+  background-color: hsl(var(--card));
+  border-right: 1px solid hsl(var(--border));
+}
+.admin-dark .admin-sidebar a.active {
+  background-color: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
+  border-left: 2px solid hsl(var(--primary));
+}
+
+/* Panel */
+.admin-dark .admin-panel {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+
+/* Cards */
+.admin-dark .admin-card {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+}

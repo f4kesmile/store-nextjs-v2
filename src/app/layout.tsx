@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@/styles/admin-dark.css";
 import { Providers } from "./providers";
 import { CartProvider } from "@/contexts/CartContext";
 import { ResellerProvider } from "@/contexts/ResellerContext";
@@ -22,8 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const isAdmin = typeof window === 'undefined' ? false : (window.location?.pathname || '').startsWith('/admin');
   return (
-    <html lang="id">
+    <html lang="id" className={isAdmin ? 'admin-dark' : ''}>
       <body>
         <ThemeProvider>
           <Providers>
