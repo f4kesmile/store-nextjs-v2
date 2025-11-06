@@ -8,7 +8,7 @@ import { formatDate, formatPrice } from "@/lib/utils";
 export default function AdminDashboard() {
   return (
     <div className="min-h-screen admin-dark">
-      <main className="container mx-auto px-4 py-6">
+      <main className="max-w-[1400px] mx-auto px-4 py-8">
         <div className="admin-panel p-6 md:p-8 space-y-6">
           <div className="flex items-center justify-between pb-4 border-b">
             <div>

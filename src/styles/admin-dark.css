@@ -1,36 +1,24 @@
-/* Admin theme dark overrides */
+/* Admin theme dark full page */
 :root.admin-dark {
-  --background: 14 14% 10%;
+  --background: 220 13% 10%;
   --foreground: 0 0% 100%;
-  --card: 220 10% 12%;
+  --card: 220 12% 14%;
   --card-foreground: 0 0% 100%;
-  --muted: 220 7% 16%;
-  --muted-foreground: 220 10% 70%;
-  --border: 220 8% 22%;
+  --muted: 220 10% 18%;
+  --muted-foreground: 220 12% 70%;
+  --border: 220 10% 22%;
+}
+
+.admin-dark body.admin-body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 /* Sidebar */
-.admin-dark .admin-sidebar {
-  background-color: hsl(var(--card));
-  border-right: 1px solid hsl(var(--border));
-}
-.admin-dark .admin-sidebar a.active {
-  background-color: hsl(var(--primary) / 0.12);
-  color: hsl(var(--primary));
-  border-left: 2px solid hsl(var(--primary));
-}
+.admin-dark .admin-sidebar { background-color: hsl(var(--card)); border-right: 1px solid hsl(var(--border)); }
+.admin-dark .admin-sidebar a { color: hsl(var(--muted-foreground)); }
+.admin-dark .admin-sidebar a.active { background: hsl(var(--primary)/.12); color: hsl(var(--primary)); border-left: 2px solid hsl(var(--primary)); }
 
-/* Panel */
-.admin-dark .admin-panel {
-  background-color: hsl(var(--card));
-  color: hsl(var(--card-foreground));
-  border: 1px solid hsl(var(--border));
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.25);
-}
-
-/* Cards */
-.admin-dark .admin-card {
-  background-color: hsl(var(--background));
-  border: 1px solid hsl(var(--border));
-}
+/* Panel and cards */
+.admin-dark .admin-panel { background: hsl(var(--card)); color: hsl(var(--card-foreground)); border: 1px solid hsl(var(--border)); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+.admin-dark .admin-card { background: hsl(var(--background)); border: 1px solid hsl(var(--border)); }

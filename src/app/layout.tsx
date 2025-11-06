@@ -14,19 +14,14 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: settings.storeName || "Store Saya - E-Commerce",
     description: settings.storeDescription || "Toko online modern dengan sistem manajemen lengkap",
-    icons: {
-      icon: settings.faviconUrl || "/favicon.ico",
-      shortcut: settings.faviconUrl || "/favicon.ico",
-      apple: settings.faviconUrl || "/apple-touch-icon.png",
-    },
+    icons: { icon: settings.faviconUrl || "/favicon.ico", shortcut: settings.faviconUrl || "/favicon.ico", apple: settings.faviconUrl || "/apple-touch-icon.png" },
   };
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const isAdmin = typeof window === 'undefined' ? false : (window.location?.pathname || '').startsWith('/admin');
   return (
-    <html lang="id" className={isAdmin ? 'admin-dark' : ''}>
-      <body>
+    <html lang="id" className={typeof window !== 'undefined' && window.location.pathname.startsWith('/admin') ? 'admin-dark' : ''}>
+      <body className={typeof window !== 'undefined' && window.location.pathname.startsWith('/admin') ? 'admin-body' : ''}>
         <ThemeProvider>
           <Providers>
             <HeadFavicon />
