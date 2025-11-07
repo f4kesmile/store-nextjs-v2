@@ -5,7 +5,11 @@ import { prisma } from '@/lib/prisma'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { productId, variantId, quantity, resellerId, customerName, customerPhone, notes } = body
+    // Pastikan Anda menerima semua data yang dibutuhkan, termasuk customerInfo
+    const { productId, variantId, quantity, resellerId, customerInfo, notes } = body 
+
+    // Destrukturisasi data pelanggan dari customerInfo
+    const { name: customerName, phone: customerPhone } = customerInfo || {};
 
     // Fetch product
     const product = await prisma.product.findUnique({
@@ -38,22 +42,24 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // GET SUPPORT WHATSAPP FROM SETTINGS
+    // GET SUPPORT WHATSAPP & RESELLER INFO FROM DB/SETTINGS
     const settings = await prisma.siteSettings.findFirst()
 
     let whatsappNumber = settings?.supportWhatsApp || '6285185031023'
     let resellerName = settings?.storeName || 'Official Store'
     let resellerRecord = null
+    let finalResellerDbId = null // ID database Reseller
 
-    // Check if reseller ID is provided and valid
+    // Check if reseller ID (uniqueId) is provided and valid
     if (resellerId) {
       resellerRecord = await prisma.reseller.findUnique({
-        where: { uniqueId: resellerId },
+        where: { uniqueId: resellerId }, // Cari berdasarkan uniqueId (ref)
       })
 
       if (resellerRecord) {
         whatsappNumber = resellerRecord.whatsappNumber
         resellerName = resellerRecord.name
+        finalResellerDbId = resellerRecord.id // Ambil ID database
       }
     }
 
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
       data: {
         productId: product.id,
         variantId: selectedVariant?.id || null,
-        resellerId: resellerRecord?.id || null,
+        resellerId: finalResellerDbId, // <-- GUNAKAN ID DARI DATABASE
         customerName: customerName || null,
         customerPhone: customerPhone || null,
         quantity,
@@ -74,8 +80,8 @@ export async function POST(req: NextRequest) {
         notes: notes || null,
       },
     })
-
-    // UPDATE STOCK
+    
+    // UPDATE STOCK (Logika pengurangan stok yang sudah ada, ini sudah benar)
     if (variantId && selectedVariant) {
       await prisma.variant.update({
         where: { id: selectedVariant.id },
@@ -87,8 +93,8 @@ export async function POST(req: NextRequest) {
         data: { stock: product.stock - quantity },
       })
     }
-
-    // ✅ Generate WhatsApp message WITH TIMESTAMP
+    
+    // ... (Logika pembuatan pesan WhatsApp tetap sama) ...
     const now = new Date()
     const orderDate = now.toLocaleDateString('id-ID', {
       weekday: 'long',
@@ -108,6 +114,8 @@ export async function POST(req: NextRequest) {
     message += `🆔 Order ID: #${transaction.id}\n`
     message += `📅 Tanggal: ${orderDate}\n`
     message += `⏰ Waktu: ${orderTime} WIB\n`
+    message += `👤 Nama Customer: ${customerName || '-'}\n` // Tambah Customer Info
+    message += `📞 Telepon Customer: ${customerPhone || '-'}\n` // Tambah Customer Info
     message += `━━━━━━━━━━━━━━━━━━━━━\n\n`
     message += `Detail Pesanan:\n`
     message += `📦 Produk: ${product.name}\n`

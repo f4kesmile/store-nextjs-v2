@@ -3,16 +3,17 @@ import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// PERBAIKAN: Menggunakan type assertion untuk mengakses nextauth yang disuntikkan oleh withAuth
 export default withAuth(
   function middleware(req: NextRequest) {
-    const token = req.nextauth.token
+    const authReq = req as any; // Cast ke any untuk mengakses properti yang disuntikkan
+    const token = authReq.nextauth.token;
     const isAdmin = req.nextUrl.pathname.startsWith('/admin')
 
     // Handle reseller ref parameter
     const ref = req.nextUrl.searchParams.get('ref')
-    if (ref && isValidResellerRef(ref)) {
-      // Valid reseller ref - allow the request to proceed
-      // The ResellerProvider will handle the locking logic on client side
+    
+    if (ref) {
       return NextResponse.next()
     }
 
@@ -30,11 +31,8 @@ export default withAuth(
   }
 )
 
-// Helper function to validate reseller ref
-function isValidResellerRef(ref: string): boolean {
-  const validRefs = ['RESELLER-A', 'RESELLER-B', 'RESELLER-C']
-  return validRefs.includes(ref)
-}
+// Helper function to validate reseller ref (dihapus karena validasi dilakukan di client/API)
+// function isValidResellerRef(ref: string): boolean { ... }
 
 export const config = {
   matcher: ['/admin/:path*'],

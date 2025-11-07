@@ -1,130 +1,153 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-
-interface ResellerContextType {
-  lockedRef: string | null;
-  currentRef: string | null;
-  isLocked: boolean;
-  lockRef: (ref: string) => void;
-  resetReseller: () => void;
-  getResellerWhatsApp: () => string;
-  getResellerData: () => ResellerData | null;
-}
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  clearStoredResellerRef,
+  getStoredResellerRef,
+} from "@/lib/reseller-utils";
 
 interface ResellerData {
   name: string;
   whatsapp: string;
-  commission: number;
+  commission?: number; // Komisinya opsional karena tidak selalu ada di response validasi
+  uniqueId: string;
+  id?: number; // ID Database
 }
 
-const RESELLER_DATA: Record<string, ResellerData> = {
-  'RESELLER-A': {
-    name: 'Reseller A',
-    whatsapp: '6281234567890',
-    commission: 10
-  },
-  'RESELLER-B': {
-    name: 'Reseller B', 
-    whatsapp: '6281234567891',
-    commission: 15
-  },
-  'RESELLER-C': {
-    name: 'Reseller C',
-    whatsapp: '6281234567892', 
-    commission: 12
-  }
-};
+interface ResellerContextType {
+  lockedRef: string | null;
+  currentRef: string | null;
+  activeResellerData: ResellerData | null;
+  isLocked: boolean;
+  lockRef: (ref: string) => void;
+  resetReseller: () => void;
+  getResellerWhatsApp: () => string;
+}
 
-const ResellerContext = createContext<ResellerContextType | undefined>(undefined);
+const ResellerContext = createContext<ResellerContextType | undefined>(
+  undefined
+);
 
-const STORAGE_KEY = 'locked_reseller_ref';
+const STORAGE_KEY = "locked_reseller_ref";
 
 export function ResellerProvider({ children }: { children: React.ReactNode }) {
+  const searchParams = useSearchParams();
   const [lockedRef, setLockedRef] = useState<string | null>(null);
   const [currentRef, setCurrentRef] = useState<string | null>(null);
+  const [activeResellerData, setActiveResellerData] =
+    useState<ResellerData | null>(null);
   const [mounted, setMounted] = useState(false);
-  
-  // Handle mounting
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Load locked ref from localStorage on mount
-  useEffect(() => {
-    if (mounted && typeof window !== 'undefined') {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && RESELLER_DATA[stored]) {
-        setLockedRef(stored);
+  // 1. Fungsi Validasi API
+  const validateResellerRef = async (
+    ref: string
+  ): Promise<ResellerData | null> => {
+    try {
+      const res = await fetch(`/api/resellers/validate?ref=${ref}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Data yang dikembalikan dari API
+        return {
+          id: data.id,
+          uniqueId: data.uniqueId,
+          name: data.name,
+          whatsapp: data.whatsappNumber,
+          commission: data.commission, // Asumsi commission tidak selalu dikembalikan
+        };
       }
+    } catch (e) {
+      console.error("API Reseller Validation Failed", e);
     }
-  }, [mounted]);
+    return null;
+  };
 
-  // Monitor URL params for ref (only on client side)
+  // 2. Load locked ref dari localStorage & URL param
   useEffect(() => {
     if (!mounted) return;
-    
-    const checkUrlRef = () => {
-      if (typeof window !== 'undefined') {
-        const urlParams = new URLSearchParams(window.location.search);
-        const ref = urlParams.get('ref');
-        
-        if (ref && RESELLER_DATA[ref]) {
-          setCurrentRef(ref);
-          
-          // Auto-lock if no ref is locked yet
-          if (!lockedRef) {
-            lockRef(ref);
+
+    const storedRef = getStoredResellerRef();
+    const urlRef = searchParams.get("ref");
+
+    const refToValidate = storedRef || urlRef;
+
+    if (refToValidate) {
+      validateResellerRef(refToValidate).then((data) => {
+        if (data) {
+          setActiveResellerData(data);
+
+          if (storedRef) {
+            setLockedRef(storedRef);
+          } else if (urlRef) {
+            // Auto-lock jika ref dari URL valid dan belum ada yang dikunci
+            lockRef(urlRef, data);
           }
         } else {
-          setCurrentRef(null);
+          // Jika ref dari URL atau storage tidak valid, hapus
+          if (storedRef) clearStoredResellerRef();
+          // Hapus ref dari URL jika tidak valid (pencegahan spam)
+          if (urlRef) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("ref");
+            window.history.replaceState(
+              {},
+              "",
+              url.pathname + (url.search || "")
+            );
+          }
         }
-      }
-    };
-    
-    checkUrlRef();
-    
-    // Listen for URL changes
-    window.addEventListener('popstate', checkUrlRef);
-    return () => window.removeEventListener('popstate', checkUrlRef);
-  }, [mounted, lockedRef]);
+      });
+    }
 
-  const lockRef = (ref: string) => {
-    if (RESELLER_DATA[ref]) {
+    setCurrentRef(urlRef);
+  }, [mounted, searchParams]); // Tambahkan searchParams sebagai dependency
+
+  const lockRef = (ref: string, data?: ResellerData) => {
+    // Hanya lock jika data valid tersedia atau baru divalidasi
+    if (data || activeResellerData?.uniqueId === ref) {
       setLockedRef(ref);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(STORAGE_KEY, ref);
-      }
+      localStorage.setItem(STORAGE_KEY, ref);
+      if (data) setActiveResellerData(data);
+    } else {
+      // Jika dipanggil tanpa data, coba validasi lagi
+      validateResellerRef(ref).then((validatedData) => {
+        if (validatedData) {
+          setLockedRef(ref);
+          localStorage.setItem(STORAGE_KEY, ref);
+          setActiveResellerData(validatedData);
+        }
+      });
     }
   };
 
   const resetReseller = () => {
     setLockedRef(null);
     setCurrentRef(null);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
-      
-      // Remove ref from URL without affecting cart
+    setActiveResellerData(null);
+    clearStoredResellerRef();
+    if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-      url.searchParams.delete('ref');
-      window.history.replaceState({}, '', url.pathname + (url.search || ''));
+      url.searchParams.delete("ref");
+      window.history.replaceState({}, "", url.pathname + (url.search || ""));
     }
   };
 
   const getResellerWhatsApp = () => {
-    const ref = lockedRef || currentRef;
-    return ref && RESELLER_DATA[ref] 
-      ? RESELLER_DATA[ref].whatsapp 
-      : process.env.NEXT_PUBLIC_DEFAULT_WHATSAPP || '6281234567890';
+    return activeResellerData?.whatsapp
+      ? activeResellerData.whatsapp
+      : process.env.NEXT_PUBLIC_DEFAULT_WHATSAPP || "6285185031023";
   };
 
-  const getResellerData = () => {
-    const ref = lockedRef || currentRef;
-    return ref && RESELLER_DATA[ref] ? RESELLER_DATA[ref] : null;
-  };
-
-  // Don't render until mounted to avoid hydration issues
   if (!mounted) {
     return <>{children}</>;
   }
@@ -134,11 +157,11 @@ export function ResellerProvider({ children }: { children: React.ReactNode }) {
       value={{
         lockedRef,
         currentRef,
+        activeResellerData,
         isLocked: !!lockedRef,
         lockRef,
         resetReseller,
         getResellerWhatsApp,
-        getResellerData
       }}
     >
       {children}
@@ -149,7 +172,7 @@ export function ResellerProvider({ children }: { children: React.ReactNode }) {
 export function useReseller() {
   const context = useContext(ResellerContext);
   if (context === undefined) {
-    throw new Error('useReseller must be used within a ResellerProvider');
+    throw new Error("useReseller must be used within a ResellerProvider");
   }
   return context;
 }

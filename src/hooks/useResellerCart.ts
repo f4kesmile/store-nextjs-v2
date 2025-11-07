@@ -2,31 +2,27 @@
 
 import { useReseller } from '@/contexts/ResellerContext';
 import { generateWhatsAppLink, buildCheckoutMessage } from '@/lib/reseller-utils';
-
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image?: string;
-}
+import { CartItem } from '@/types/reseller';
 
 export function useResellerCart() {
-  const { getResellerWhatsApp, lockedRef, getResellerData } = useReseller();
+  // PERBAIKAN: Mengambil activeResellerData (properti) alih-alih getResellerData (fungsi)
+  const { getResellerWhatsApp, lockedRef, activeResellerData } = useReseller(); 
 
   const processCheckout = (items: CartItem[]) => {
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const whatsappNumber = getResellerWhatsApp();
+    
+    // Pastikan kita mengirim uniqueId (lockedRef) ke API checkout
     const message = buildCheckoutMessage(items, total, lockedRef || undefined);
     
     const whatsappLink = generateWhatsAppLink(whatsappNumber, message);
     
-    // Open WhatsApp in new tab
     window.open(whatsappLink, '_blank');
   };
 
   const getActiveReseller = () => {
-    return getResellerData();
+    // Menggunakan properti yang sudah ada
+    return activeResellerData; 
   };
 
   const isResellerActive = () => {
