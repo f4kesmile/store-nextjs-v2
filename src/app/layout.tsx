@@ -7,18 +7,28 @@ import { ResellerProvider } from "@/contexts/ResellerContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { getServerSettings } from "@/lib/server-settings";
 import HeadFavicon from "@/components/HeadFavicon";
-import { Toaster } from "@/components/ui/use-toast";
+import { Toaster } from "sonner";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getServerSettings();
   return {
     title: settings.storeName || "Store Saya - E-Commerce",
-    description: settings.storeDescription || "Toko online modern dengan sistem manajemen lengkap",
-    icons: { icon: settings.faviconUrl || "/favicon.ico", shortcut: settings.faviconUrl || "/favicon.ico", apple: settings.faviconUrl || "/apple-touch-icon.png" },
+    description:
+      settings.storeDescription ||
+      "Toko online modern dengan sistem manajemen lengkap",
+    icons: {
+      icon: settings.faviconUrl || "/favicon.ico",
+      shortcut: settings.faviconUrl || "/favicon.ico",
+      apple: settings.faviconUrl || "/apple-touch-icon.png",
+    },
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="id">
       <body>
@@ -28,8 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ResellerProvider>
               <CartProvider>
                 {children}
-                <div id="toast-root" />
-                <Toaster />
+                <Toaster richColors position="top-right" visibleToasts={3} />
               </CartProvider>
             </ResellerProvider>
           </Providers>

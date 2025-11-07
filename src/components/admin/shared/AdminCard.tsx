@@ -1,8 +1,14 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
-import { Button } from '../../ui/button';
-import { MoreHorizontal, Plus } from 'lucide-react';
-import { cn } from '../../../lib/utils';
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../ui/card";
+import { Button } from "../../ui/button";
+import { MoreHorizontal, Plus, Loader2 } from "lucide-react";
+import { cn } from "../../../lib/utils";
 
 interface AdminCardProps {
   title: string;
@@ -28,15 +34,21 @@ const AdminCard: React.FC<AdminCardProps> = ({
   onAddClick,
   loading = false,
   empty = false,
-  emptyMessage = 'No data available',
+  emptyMessage = "No data available",
   emptyIcon,
 }) => {
   return (
-    <Card className={cn('bg-white shadow-sm hover:shadow-md transition-shadow', className)}>
+    <Card
+      className={cn(
+        "bg-[hsl(var(--card))] shadow-sm hover:shadow-md transition-shadow",
+        className
+      )}
+    >
+      {" "}
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg font-semibold text-gray-900">
+            <CardTitle className="text-lg font-semibold text-[hsl(var(--foreground))]">
               {title}
             </CardTitle>
             {description && (
@@ -47,9 +59,9 @@ const AdminCard: React.FC<AdminCardProps> = ({
           </div>
           <div className="flex items-center gap-2">
             {showAddButton && (
-              <Button 
-                onClick={onAddClick} 
-                size="sm" 
+              <Button
+                onClick={onAddClick}
+                size="sm"
                 className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
@@ -63,16 +75,15 @@ const AdminCard: React.FC<AdminCardProps> = ({
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Memuat...</span>
+            </div>
           </div>
         ) : empty ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            {emptyIcon && (
-              <div className="mb-4 text-gray-400">
-                {emptyIcon}
-              </div>
-            )}
-            <p className="text-gray-500 text-sm">{emptyMessage}</p>
+            {emptyIcon && <div className="mb-4 text-gray-400">{emptyIcon}</div>}
+            <p className="text-muted-foreground text-sm">{emptyMessage}</p>
           </div>
         ) : (
           children

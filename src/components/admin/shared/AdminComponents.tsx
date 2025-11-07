@@ -1,71 +1,78 @@
-import React from 'react';
-import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
+import React from "react";
+import { Button } from "../../ui/button";
+import { Badge } from "../../ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '../../ui/dropdown-menu';
-import { MoreHorizontal, Edit, Trash2, Eye, Copy } from 'lucide-react';
-import { cn } from '../../../lib/utils';
+} from "../../ui/dropdown-menu";
+import { MoreHorizontal, Edit, Trash2, Eye, Copy } from "lucide-react";
+import { cn } from "../../../lib/utils";
 
 // Status Badge Component
 interface StatusBadgeProps {
   status: string;
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  variant?: "default" | "success" | "warning" | "danger" | "info";
   className?: string;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ 
-  status, 
-  variant = 'default',
-  className 
+export const StatusBadge: React.FC<StatusBadgeProps> = ({
+  status,
+  variant = "default",
+  className,
 }) => {
   const getVariantClasses = () => {
     switch (variant) {
-      case 'success':
-        return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'warning':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-      case 'danger':
-        return 'bg-red-100 text-red-800 hover:bg-red-200';
-      case 'info':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case "success":
+        return "bg-green-100 text-green-800 hover:bg-green-200";
+      case "warning":
+        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+      case "danger":
+        return "bg-red-100 text-red-800 hover:bg-red-200";
+      case "info":
+        return "bg-blue-100 text-blue-800 hover:bg-blue-200";
       default:
-        return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+        return "bg-gray-100 text-gray-800 hover:bg-gray-200";
     }
   };
 
   const getStatusVariant = (status: string) => {
     const normalizedStatus = status.toLowerCase();
-    if (['active', 'completed', 'published', 'approved', 'success'].includes(normalizedStatus)) {
-      return 'success';
+    if (
+      ["active", "completed", "published", "approved", "success"].includes(
+        normalizedStatus
+      )
+    ) {
+      return "success";
     }
-    if (['pending', 'processing', 'draft', 'review'].includes(normalizedStatus)) {
-      return 'warning';
+    if (
+      ["pending", "processing", "draft", "review"].includes(normalizedStatus)
+    ) {
+      return "warning";
     }
-    if (['inactive', 'cancelled', 'rejected', 'failed', 'error'].includes(normalizedStatus)) {
-      return 'danger';
+    if (
+      ["inactive", "cancelled", "rejected", "failed", "error"].includes(
+        normalizedStatus
+      )
+    ) {
+      return "danger";
     }
-    if (['info', 'shipped', 'in_transit'].includes(normalizedStatus)) {
-      return 'info';
+    if (["info", "shipped", "in_transit"].includes(normalizedStatus)) {
+      return "info";
     }
-    return 'default';
+    return "default";
   };
 
-  const finalVariant = variant === 'default' ? getStatusVariant(status) : variant;
+  const finalVariant =
+    variant === "default" ? getStatusVariant(status) : variant;
 
   return (
-    <Badge 
-      className={cn(
-        getVariantClasses(),
-        'capitalize font-medium',
-        className
-      )}
+    <Badge
+      className={cn(getVariantClasses(), "capitalize font-medium", className)}
     >
-      {status.replace(/_/g, ' ')}
+      {status.replace(/_/g, " ")}
     </Badge>
   );
 };
@@ -74,8 +81,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 interface IconButtonProps {
   icon: React.ReactNode;
   onClick?: () => void;
-  variant?: 'ghost' | 'outline' | 'default';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "ghost" | "outline" | "default";
+  size?: "sm" | "md" | "lg";
   className?: string;
   disabled?: boolean;
   tooltip?: string;
@@ -84,22 +91,22 @@ interface IconButtonProps {
 export const IconButton: React.FC<IconButtonProps> = ({
   icon,
   onClick,
-  variant = 'ghost',
-  size = 'sm',
+  variant = "ghost",
+  size = "sm",
   className,
   disabled = false,
   tooltip,
 }) => {
   const getSizeClasses = () => {
     switch (size) {
-      case 'sm':
-        return 'h-8 w-8 p-0';
-      case 'md':
-        return 'h-10 w-10 p-0';
-      case 'lg':
-        return 'h-12 w-12 p-0';
+      case "sm":
+        return "h-8 w-8 p-0";
+      case "md":
+        return "h-10 w-10 p-0";
+      case "lg":
+        return "h-12 w-12 p-0";
       default:
-        return 'h-8 w-8 p-0';
+        return "h-8 w-8 p-0";
     }
   };
 
@@ -110,7 +117,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
       disabled={disabled}
       className={cn(
         getSizeClasses(),
-        'hover:bg-gray-100 transition-colors',
+        "hover:bg-gray-100 transition-colors",
         className
       )}
       title={tooltip}
@@ -125,7 +132,7 @@ interface ActionItem {
   label: string;
   icon?: React.ReactNode;
   onClick: () => void;
-  variant?: 'default' | 'destructive';
+  variant?: "default" | "destructive";
   separator?: boolean;
 }
 
@@ -143,9 +150,9 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          className={cn('h-8 w-8 p-0', className)}
+        <Button
+          variant="ghost"
+          className={cn("h-8 w-8 p-0", className)}
           disabled={disabled}
         >
           <MoreHorizontal className="h-4 w-4" />
@@ -159,8 +166,9 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({
             <DropdownMenuItem
               onClick={action.onClick}
               className={cn(
-                'flex items-center gap-2 cursor-pointer',
-                action.variant === 'destructive' && 'text-red-600 focus:text-red-600'
+                "flex items-center gap-2 cursor-pointer",
+                action.variant === "destructive" &&
+                  "text-red-600 focus:text-red-600"
               )}
             >
               {action.icon}
@@ -175,20 +183,32 @@ export const ActionDropdown: React.FC<ActionDropdownProps> = ({
 
 // Common action sets for reuse
 export const createCommonActions = {
-  crud: (onView?: () => void, onEdit?: () => void, onDelete?: () => void): ActionItem[] => [
-    ...(onView ? [{ label: 'View', icon: <Eye className="h-4 w-4" />, onClick: onView }] : []),
-    ...(onEdit ? [{ label: 'Edit', icon: <Edit className="h-4 w-4" />, onClick: onEdit }] : []),
-    ...(onDelete ? [{ 
-      label: 'Delete', 
-      icon: <Trash2 className="h-4 w-4" />, 
-      onClick: onDelete, 
-      variant: 'destructive' as const,
-      separator: true 
-    }] : []),
+  crud: (
+    onView?: () => void,
+    onEdit?: () => void,
+    onDelete?: () => void
+  ): ActionItem[] => [
+    ...(onView
+      ? [{ label: "View", icon: <Eye className="h-4 w-4" />, onClick: onView }]
+      : []),
+    ...(onEdit
+      ? [{ label: "Edit", icon: <Edit className="h-4 w-4" />, onClick: onEdit }]
+      : []),
+    ...(onDelete
+      ? [
+          {
+            label: "Delete",
+            icon: <Trash2 className="h-4 w-4" />,
+            onClick: onDelete,
+            variant: "destructive" as const,
+            separator: true,
+          },
+        ]
+      : []),
   ],
-  
+
   copy: (onCopy: () => void): ActionItem => ({
-    label: 'Copy',
+    label: "Copy",
     icon: <Copy className="h-4 w-4" />,
     onClick: onCopy,
   }),
@@ -209,18 +229,18 @@ export const FormGrid: React.FC<FormGridProps> = ({
   const getGridClasses = () => {
     switch (columns) {
       case 1:
-        return 'grid-cols-1';
+        return "grid-cols-1";
       case 2:
-        return 'grid-cols-1 md:grid-cols-2';
+        return "grid-cols-1 md:grid-cols-2";
       case 3:
-        return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+        return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
       default:
-        return 'grid-cols-1 md:grid-cols-2';
+        return "grid-cols-1 md:grid-cols-2";
     }
   };
 
   return (
-    <div className={cn('grid gap-4', getGridClasses(), className)}>
+    <div className={cn("grid gap-4", getGridClasses(), className)}>
       {children}
     </div>
   );

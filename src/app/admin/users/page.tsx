@@ -1,73 +1,93 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import AdminCard from '../../../components/admin/shared/AdminCard';
-import AdminDialog from '../../../components/admin/shared/AdminDialog';
-import AdminTable from '../../../components/admin/shared/AdminTable';
-import { StatusBadge, ActionDropdown, FormGrid, createCommonActions } from '../../../components/admin/shared/AdminComponents';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Label } from '../../../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { Textarea } from '../../../components/ui/textarea';
-import { Users, UserPlus, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from "react";
+import AdminCard from "../../../components/admin/shared/AdminCard";
+import AdminDialog from "../../../components/admin/shared/AdminDialog";
+import AdminTable from "../../../components/admin/shared/AdminTable";
+import {
+  StatusBadge,
+  ActionDropdown,
+  FormGrid,
+  createCommonActions,
+} from "../../../components/admin/shared/AdminComponents";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import { Users, UserPlus, Calendar } from "lucide-react";
+import { toast } from "../../../components/ui/use-toast";
 
-interface User {
+// Interface berdasarkan data API Anda (dari /api/users/route.ts)
+interface Role {
   id: number;
   name: string;
+}
+interface User {
+  id: number;
+  username: string;
   email: string;
-  role: string;
-  status: string;
-  phone?: string;
-  address?: string;
+  role: Role;
+  roleId: number;
   createdAt: string;
-  lastLogin?: string;
+  password?: string; // Untuk form
 }
 
 const UsersPage: React.FC = () => {
-  const [users] = useState<User[]>([
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'Admin',
-      status: 'active',
-      phone: '+62 812-3456-7890',
-      address: 'Jakarta, Indonesia',
-      createdAt: '2024-01-15',
-      lastLogin: '2024-11-06'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      role: 'Customer',
-      status: 'active',
-      phone: '+62 813-7890-1234',
-      address: 'Bandung, Indonesia',
-      createdAt: '2024-02-20',
-      lastLogin: '2024-11-05'
-    },
-    {
-      id: 3,
-      name: 'Bob Johnson',
-      email: 'bob@example.com',
-      role: 'Reseller',
-      status: 'inactive',
-      phone: '+62 814-5678-9012',
-      address: 'Surabaya, Indonesia',
-      createdAt: '2024-03-10',
-      lastLogin: '2024-10-28'
-    },
-  ]);
+  // Ganti data statis dengan state kosong
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<Partial<User> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreateMode, setIsCreateMode] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState("");
+
+  // Fungsi untuk mengambil data
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      } else {
+        toast({ title: "Gagal memuat users", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Terjadi kesalahan", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const res = await fetch("/api/roles");
+      if (res.ok) setRoles(await res.json());
+    } catch (error) {
+      console.error("Failed to fetch roles", error);
+    }
+  };
+
+  // Panggil fetch saat komponen dimuat
+  useEffect(() => {
+    fetchUsers();
+    fetchRoles();
+  }, []);
 
   const handleCreateUser = () => {
-    setSelectedUser(null);
+    setSelectedUser({
+      username: "",
+      email: "",
+      roleId: roles.find((r) => r.name === "ADMIN")?.id || roles[0]?.id,
+    });
     setIsCreateMode(true);
     setIsDialogOpen(true);
   };
@@ -78,148 +98,181 @@ const UsersPage: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  const handleViewUser = (user: User) => {
-    setSelectedUser(user);
-    setIsCreateMode(false);
-    setIsDialogOpen(true);
+  const handleDeleteUser = async (user: User) => {
+    if (confirm(`Anda yakin ingin menghapus user ${user.username}?`)) {
+      try {
+        const res = await fetch(`/api/users/${user.id}`, { method: "DELETE" });
+        if (res.ok) {
+          toast({
+            title: "User dihapus",
+            description: `${user.username} telah dihapus.`,
+          });
+          fetchUsers(); // Muat ulang data
+        } else {
+          toast({ title: "Gagal menghapus", variant: "destructive" });
+        }
+      } catch (error) {
+        toast({ title: "Terjadi kesalahan", variant: "destructive" });
+      }
+    }
   };
 
-  const handleDeleteUser = (user: User) => {
-    if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      console.log('Delete user:', user.id);
+  const handleSaveUser = async () => {
+    if (!selectedUser) return;
+
+    // Siapkan payload, hapus password jika kosong
+    const payload = { ...selectedUser };
+    if (payload.password === "") {
+      delete payload.password;
+    }
+
+    const url = isCreateMode ? "/api/users" : `/api/users/${selectedUser.id}`;
+    const method = isCreateMode ? "POST" : "PUT";
+
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Berhasil disimpan",
+          description: `Data user ${selectedUser.username} tersimpan.`,
+        });
+        setIsDialogOpen(false);
+        setSelectedUser(null);
+        fetchUsers(); // Muat ulang data
+      } else {
+        const err = await res.json();
+        toast({
+          title: "Gagal menyimpan",
+          description: err.error,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({ title: "Terjadi kesalahan", variant: "destructive" });
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
+  // Sesuaikan kolom dengan data dari API
   const columns = [
     {
-      key: 'name',
-      label: 'Name',
+      key: "username",
+      label: "User",
       render: (value: string, user: User) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-            <Users className="w-4 h-4 text-blue-600" />
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+            <Users className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <p className="font-medium text-gray-900">{value}</p>
-            <p className="text-sm text-gray-500">{user.email}</p>
+            <p className="font-medium text-[hsl(var(--foreground))]">{value}</p>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              {user.email}
+            </p>
           </div>
         </div>
-      )
+      ),
     },
     {
-      key: 'role',
-      label: 'Role',
+      key: "role",
+      label: "Role",
+      render: (role: Role) => (
+        <StatusBadge
+          status={role.name}
+          variant={role.name === "DEVELOPER" ? "danger" : "default"}
+        />
+      ),
+    },
+    {
+      key: "createdAt",
+      label: "Bergabung",
+      className: "hidden lg:table-cell",
       render: (value: string) => (
-        <StatusBadge status={value} variant="info" />
-      )
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (value: string) => (
-        <StatusBadge status={value} />
-      )
-    },
-    {
-      key: 'phone',
-      label: 'Contact',
-      className: 'hidden md:table-cell',
-      render: (value: string, user: User) => (
-        <div className="space-y-1">
-          {user.phone && (
-            <div className="flex items-center gap-1 text-sm text-gray-600">
-              <Phone className="w-3 h-3" />
-              {user.phone}
-            </div>
-          )}
-          {user.address && (
-            <div className="flex items-center gap-1 text-sm text-gray-500">
-              <MapPin className="w-3 h-3" />
-              {user.address}
-            </div>
-          )}
+        <div className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))]">
+          <Calendar className="w-3 h-3" />
+          {formatDate(value)}
         </div>
-      )
+      ),
     },
     {
-      key: 'createdAt',
-      label: 'Joined',
-      className: 'hidden lg:table-cell',
-      render: (value: string, user: User) => (
-        <div className="space-y-1">
-          <div className="flex items-center gap-1 text-sm text-gray-600">
-            <Calendar className="w-3 h-3" />
-            {formatDate(value)}
-          </div>
-          {user.lastLogin && (
-            <div className="text-xs text-gray-500">
-              Last: {formatDate(user.lastLogin)}
-            </div>
-          )}
-        </div>
-      )
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      className: 'w-12',
-      render: (_, user: User) => (
+      key: "actions",
+      label: "Aksi",
+      className: "w-12",
+      render: (
+        _: any,
+        user: User // <-- FIX implicit 'any'
+      ) => (
         <ActionDropdown
           actions={createCommonActions.crud(
-            () => handleViewUser(user),
+            undefined, // Tidak ada view, langsung edit
             () => handleEditUser(user),
             () => handleDeleteUser(user)
           )}
         />
-      )
+      ),
     },
   ];
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchValue.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchValue.toLowerCase())
+  const filteredUsers = useMemo(
+    () =>
+      users.filter(
+        (user) =>
+          user.username.toLowerCase().includes(searchValue.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchValue.toLowerCase()) ||
+          user.role.name.toLowerCase().includes(searchValue.toLowerCase())
+      ),
+    [users, searchValue]
   );
 
+  const handleDialogChange = (field: keyof User, value: any) => {
+    setSelectedUser((prev) => (prev ? { ...prev, [field]: value } : null));
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Users Management</h1>
-            <p className="text-gray-600 mt-1">Manage system users and their permissions</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Users Management</h1>
+            <p className="text-muted-foreground mt-1">
+              Kelola user dan hak akses sistem
+            </p>
           </div>
-          <Button onClick={handleCreateUser} className="flex items-center gap-2">
+          <Button
+            onClick={handleCreateUser}
+            className="flex items-center gap-2"
+          >
             <UserPlus className="w-4 h-4" />
-            Add User
+            Tambah User
           </Button>
         </div>
 
         {/* Users Table */}
-        <AdminCard 
+        <AdminCard
           title="All Users"
-          description={`${filteredUsers.length} users found`}
+          description={`${filteredUsers.length} users ditemukan`}
         >
           <AdminTable
             columns={columns}
             data={filteredUsers}
+            loading={loading}
             searchable
             searchValue={searchValue}
             onSearchChange={setSearchValue}
-            searchPlaceholder="Search users by name, email, or role..."
-            filterable
-            exportable
-            refreshable
-            emptyMessage="No users found"
+            searchPlaceholder="Cari user, email, atau role..."
+            emptyMessage="User tidak ditemukan"
           />
         </AdminCard>
 
@@ -227,86 +280,91 @@ const UsersPage: React.FC = () => {
         <AdminDialog
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
-          title={isCreateMode ? 'Add New User' : selectedUser ? `Edit ${selectedUser.name}` : 'User Details'}
-          description={isCreateMode ? 'Create a new user account' : 'View and edit user information'}
+          title={
+            isCreateMode ? "Tambah User Baru" : `Edit ${selectedUser?.username}`
+          }
+          description={
+            isCreateMode
+              ? "Buat akun user baru"
+              : "Lihat dan edit informasi user"
+          }
           size="lg"
           footer={
             <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
+                Batal
               </Button>
-              <Button>
-                {isCreateMode ? 'Create User' : 'Save Changes'}
+              <Button onClick={handleSaveUser}>
+                {isCreateMode ? "Buat User" : "Simpan Perubahan"}
               </Button>
             </div>
           }
         >
-          <div className="space-y-6">
-            <FormGrid columns={2}>
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Enter full name"
-                  defaultValue={selectedUser?.name || ''}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter email address"
-                  defaultValue={selectedUser?.email || ''}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select defaultValue={selectedUser?.role || ''}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Manager">Manager</SelectItem>
-                    <SelectItem value="Customer">Customer</SelectItem>
-                    <SelectItem value="Reseller">Reseller</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select defaultValue={selectedUser?.status || 'active'}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  placeholder="Enter phone number"
-                  defaultValue={selectedUser?.phone || ''}
-                />
-              </div>
-            </FormGrid>
-            
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                placeholder="Enter full address"
-                defaultValue={selectedUser?.address || ''}
-                rows={3}
-              />
+          {selectedUser && (
+            <div className="space-y-6">
+              <FormGrid columns={2}>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    placeholder="Masukkan username"
+                    value={selectedUser.username || ""}
+                    onChange={(e) =>
+                      handleDialogChange("username", e.target.value)
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter email address"
+                    value={selectedUser.email || ""}
+                    onChange={(e) =>
+                      handleDialogChange("email", e.target.value)
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  {/* FIX: Ganti defaultValue dengan value dan onValueChange */}
+                  <Select
+                    value={String(selectedUser.roleId || "")}
+                    onValueChange={(value) =>
+                      handleDialogChange("roleId", parseInt(value))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role.id} value={String(role.id)}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder={
+                      isCreateMode
+                        ? "Masukkan password"
+                        : "Kosongkan jika tidak ganti"
+                    }
+                    onChange={(e) =>
+                      handleDialogChange("password", e.target.value)
+                    }
+                  />
+                </div>
+              </FormGrid>
             </div>
-          </div>
+          )}
         </AdminDialog>
       </div>
     </div>
